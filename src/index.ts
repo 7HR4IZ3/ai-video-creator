@@ -17,7 +17,7 @@ import {
   type UploadResult,
 } from "./uploaders";
 
-import type { RedditStory } from "./types";
+import type { RedditStory, StreamSrc } from "./types";
 import { AsyncQueue, readAsReadable } from "./utils";
 
 const program = new Command();
@@ -68,7 +68,7 @@ async function generate(story: RedditStory, skipVideo = false) {
 
   if (await exists(audioPath)) {
     console.log(`[➡️]: Skipping audio generation`);
-    audio = await readAsReadable({ filePath: audioPath })
+    audio = await readAsReadable({ filePath: audioPath });
   } else {
     audio = await generateAudio(story);
     console.log(`[✅]: Generated audio`);
@@ -94,7 +94,7 @@ async function generate(story: RedditStory, skipVideo = false) {
 
 async function uploadToDestination(
   platform: UploadPlatform,
-  filePath: string,
+  output: StreamSrc,
   story: RedditStory,
   privacy: string = "private",
   options: Record<string, any> = {}
@@ -108,7 +108,7 @@ async function uploadToDestination(
 
   const result = await uploadVideo(
     platform,
-    filePath,
+    output,
     story.title,
     description,
     privacy,
@@ -190,7 +190,7 @@ program
         if (!options.skipUpload) {
           await uploadToDestination(
             platform,
-            output.final.src,
+            output.final,
             story,
             options.privacy
           );
@@ -207,7 +207,7 @@ program
             if (!options.skipUpload) {
               await uploadToDestination(
                 platform,
-                output.final.src,
+                output.final,
                 story,
                 options.privacy
               );
@@ -291,9 +291,8 @@ program
       for (const platform of platforms) {
         const result = await uploadToDestination(
           platform as UploadPlatform,
-          videoPath,
-          story,
-          options.privacy
+          await readAsReadable({ filePath: videoPath }),
+          story, options.privacy
         );
         results.push({ platform, result });
       }

@@ -1,9 +1,10 @@
 import axios from "axios";
 import fs from "fs";
 import FormData from "form-data";
+import type { StreamSrc } from "../types";
 
 export async function uploadToTikTok(
-  filePath: string,
+  output: StreamSrc,
   title: string,
   description: string,
   privacy: string = "PUBLIC",
@@ -35,7 +36,7 @@ export async function uploadToTikTok(
     const uploadId = initResponse.data.data.upload_id;
     
     // Step 2: Upload video
-    const fileBuffer = fs.readFileSync(filePath);
+    const fileBuffer = fs.readFileSync(output.src);
     const formData = new FormData();
     formData.append("video", fileBuffer, { filename: "video.mp4" });
     

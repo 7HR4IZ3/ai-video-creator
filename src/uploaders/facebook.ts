@@ -1,9 +1,10 @@
 import axios from "axios";
 import FormData from "form-data";
 import fs from "fs";
+import type { StreamSrc } from "../types";
 
 export async function uploadToFacebook(
-  filePath: string,
+  output: StreamSrc,
   title: string,
   description: string,
   privacy: string = "SELF",
@@ -23,14 +24,14 @@ export async function uploadToFacebook(
       {
         access_token: accessToken,
         upload_phase: "start",
-        file_size: fs.statSync(filePath).size,
+        file_size: fs.statSync(output.src).size,
       }
     );
 
     const uploadSessionId = initResponse.data.upload_session_id;
 
     // Step 2: Upload the video chunks
-    const fileStream = fs.createReadStream(filePath);
+    const fileStream = output.stream;
     const formData = new FormData();
     formData.append("access_token", accessToken);
     formData.append("upload_phase", "transfer");

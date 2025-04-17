@@ -1,9 +1,10 @@
 import fs from "fs";
 import path from "path";
 import { CWD } from "../constants";
+import type { StreamSrc } from "../types";
 
 export async function saveToFilesystem(
-  filePath: string,
+  output: StreamSrc,
   title: string,
   description: string,
   options: Record<string, any> = {}
@@ -27,7 +28,7 @@ export async function saveToFilesystem(
     const outputPath = path.join(outputDir, outputFilename);
 
     // Copy the file to the output directory
-    fs.copyFileSync(filePath, outputPath);
+    fs.copyFileSync(output.src, outputPath);
 
     // Create a metadata file with the title and description
     const metadataPath = path.join(outputDir, `${outputFilename}.json`);
@@ -37,7 +38,7 @@ export async function saveToFilesystem(
         {
           title,
           description,
-          originalPath: filePath,
+          originalPath: output.src,
           createdAt: new Date().toISOString(),
           ...options,
         },

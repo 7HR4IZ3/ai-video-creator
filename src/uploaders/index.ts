@@ -2,6 +2,7 @@ import { uploadToYoutube } from "./youtube";
 import { uploadToFacebook } from "./facebook";
 import { uploadToTikTok } from "./tiktok";
 import { saveToFilesystem } from "./filesystem";
+import type { StreamSrc } from "../types";
 
 export type UploadPlatform = "youtube" | "facebook" | "tiktok" | "filesystem";
 
@@ -13,7 +14,7 @@ export interface UploadResult {
 
 export async function uploadVideo(
   platform: UploadPlatform,
-  filePath: string,
+  output: StreamSrc,
   title: string,
   description: string,
   privacy: string = "private",
@@ -21,13 +22,13 @@ export async function uploadVideo(
 ): Promise<UploadResult> {
   switch (platform) {
     case "youtube":
-      return uploadToYoutube(filePath, title, description, privacy);
+      return uploadToYoutube(output, title, description, privacy);
     case "facebook":
-      return uploadToFacebook(filePath, title, description, privacy, options);
+      return uploadToFacebook(output, title, description, privacy, options);
     case "tiktok":
-      return uploadToTikTok(filePath, title, description, privacy, options);
+      return uploadToTikTok(output, title, description, privacy, options);
     case "filesystem":
-      return saveToFilesystem(filePath, title, description, options);
+      return saveToFilesystem(output, title, description, options);
     default:
       return {
         success: false,

@@ -7,9 +7,10 @@ import Redis from "ioredis";
 import { google } from "googleapis";
 import GoogleAuth from "google-auth-library";
 import path from "path";
+import type { StreamSrc } from "../types";
 
 export async function uploadToYoutube(
-  filePath: string,
+  output: StreamSrc,
   title: string,
   description: string,
   privacy: string = "public"
@@ -97,8 +98,8 @@ export async function uploadToYoutube(
   });
 
   try {
-    console.log("[youtube]", `Attempting to upload video: ${title} from path: ${filePath}`);
-    const fileSize = fs.statSync(filePath).size;
+    console.log("[youtube]", `Attempting to upload video: ${title} from path: ${output.src}`);
+    const fileSize = fs.statSync(output.src).size;
     console.log("[youtube]", `File size: ${fileSize} bytes`);
 
     const response = await youtube.videos.insert({
@@ -111,7 +112,7 @@ export async function uploadToYoutube(
         },
       },
       media: {
-        body: fs.createReadStream(filePath),
+        body: output.stream,
       },
     });
 
