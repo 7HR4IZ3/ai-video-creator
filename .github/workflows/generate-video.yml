@@ -30,7 +30,7 @@ jobs:
         run: |
           python -m venv .venv
           source .venv/bin/activate
-          pip install -r requirements.txt
+          pip install moviepy click soundfile kokoro faster_whisper
 
       - name: Set up Filesystem
         run: |
