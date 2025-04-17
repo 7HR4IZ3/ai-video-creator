@@ -25,12 +25,17 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.x' # Or specify a specific version like '3.11'
+      
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
 
       - name: Install Python dependencies
         run: |
           python -m venv .venv
           source .venv/bin/activate
-          pip install moviepy click soundfile kokoro faster_whisper
+          uv add moviepy click soundfile kokoro faster_whisper
 
       - name: Set up Filesystem
         run: |
