@@ -11,7 +11,7 @@ import type { RedditStory, StreamSrc } from "./types";
 
 async function processText(title: string, story: string) {
   const response = await openai.chat.completions.create({
-    model: process.env.OPENAI_MODEL!,
+    model: process.env.OPENROUTER_MODEL!,
     messages: [
       {
         role: "system",
@@ -19,19 +19,26 @@ async function processText(title: string, story: string) {
 You are provided with a story sourced from Reddit. Your task is to transform this narrative into a version that is fully appropriate for posting on platforms such as YouTube or TikTok. This involves a careful revision to remove, replace, or reframe any explicit, offensive, or sensitive content while maintaining the original narrative's story. The revised story should be engaging, clear, and suitable for a diverse, general audience and almost as long as the original story.
 
 Please follow these guidelines in your transformation:
-1. Remove or alter any content that may be deemed inappropriate, explicit, or offensive.
-2. Adjust the tone to be engaging and lively, ensuring the language is family-friendly and accessible.
-3. Maintain the coherence and flow of the original story while enhancing its appeal for a social media audience.
-4. Ensure you respond with text only, without using things like emojis
-5. Make the story moe suitable for text to speech generation
-6. Replace the words AITA with Am I the asshole?
+1. Make the text AI voice friendly and suitable for an AI voice to read.
+2. Remove or alter any content that may be deemed inappropriate, explicit, or offensive.
+3. Adjust the tone to be engaging and lively, ensuring the language is family-friendly and accessible.
+4. Maintain the coherence and flow of the original story while enhancing its appeal for a social media audience.
+5. Ensure you respond with text only, without using things like emojis
+6. Make the story moe suitable for text to speech generation
+7. Replace the words AITA and AITAH with Am I the asshole?
+
+Ensure you respond with only the transformed story and nothing else
 `,
       },
-      { role: "user", content: story },
+      { role: "user", content: "Title: " + title + "\n\n" + story },
     ],
   });
 
-  return (title + ".\n\n" + response.choices[0].message.content) as string;
+  if (!response.choices?.length) {
+    throw new Error("No response from OpenAI");
+  }
+
+  return response.choices[0].message.content!;
 }
 
 async function generateAudioElevenLabs(story: RedditStory) {
@@ -87,14 +94,13 @@ function generateAudioLocal(story: RedditStory) {
       [path.join(CWD, "utils/main.py"), "audio", "-o", outputPath, text],
       {
         cwd: process.cwd(),
-        detached: true,
-        stdio: "inherit",
+        stdio: "ignore",
       }
     );
 
     proc.on("error", reject);
 
-    proc.on("exit", (message) => {
+    proc.on("exit", () => {
       resolve(readAsReadable({ filePath: outputPath }));
     });
   });
@@ -102,7 +108,7 @@ function generateAudioLocal(story: RedditStory) {
 
 export async function generateAudio(story: RedditStory) {
   const outputPath = path.join(CWD, "media/audios", `${story.name}.mp3`);
-  if (false && await fs.promises.exists(outputPath)) {
+  if (await fs.promises.exists(outputPath)) {
     return await readAsReadable({ filePath: outputPath });
   }
 

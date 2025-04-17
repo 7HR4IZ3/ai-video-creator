@@ -57,13 +57,13 @@ def cli():
 
 @cli.command()
 @click.argument("text")
-@click.option("-s", "--speed", default=1.7, type=int, help="speech speed")
-@click.option("-v", "--voice", default="af_heart", help="ai voice to use")
+@click.option("-s", "--speed", default=1, type=int, help="speech speed")
+@click.option("-v", "--voice", default="am_fenrir", help="ai voice to use")
 @click.option(
     "-o", "--output", default="output.wav", help="audio output file", type=Path
 )
 def audio(
-    text: str, output: Path = "output.wav", voice: str = "af_heart", speed: int = 1.7
+    text: str, output: Path = "output.wav", voice: str = "am_fenrir", speed: int = 1
 ):
     """Convert TEXT to audio and save in OUTPUT
 
@@ -74,7 +74,7 @@ def audio(
 
     pipeline = KPipeline(lang_code="a")
 
-    with soundfile.SoundFile(output.as_posix(), "w", 24000, 1) as out:
+    with soundfile.SoundFile(output.as_posix(), "w", 32000, 1) as out:
         for _, _, audio in pipeline(text, voice=voice, speed=speed, split_pattern=r"\n"):
             out.write(audio)
 

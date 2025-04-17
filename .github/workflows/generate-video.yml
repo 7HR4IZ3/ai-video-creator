@@ -1,0 +1,79 @@
+name: Generate Social Video
+
+on:
+  schedule:
+    # Runs daily at midnight UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest # Or specify a specific version
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x' # Or specify a specific version like '3.11'
+
+      - name: Install Python dependencies
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install -r requirements.txt
+
+      - name: Run video generation script
+        # Generates 1 video using the filesystem uploader
+        # Add secrets and adjust platform/options if uploading to external services
+        run: bun src/index.ts generate --limit 3 --platform youtube
+        env:
+          # Add any necessary environment variables here as GitHub secrets
+          # e.g., OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          NODE_ENV: production
+          ENVIRONMENT: ${{ secrets.ENVIRONMENT }}
+          AUDIO_GENERATOR: ${{ secrets.AUDIO_GENERATOR }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ELEVENLABS_VOICE: ${{ secrets.ELEVENLABS_VOICE }}
+          ELEVENLABS_MODEL_ID: ${{ secrets.ELEVENLABS_MODEL_ID }}
+          LOCAL_AI_VOICE: ${{ secrets.LOCAL_AI_VOICE }}
+          ZYPHRA_API_KEY: ${{ secrets.ZYPHRA_API_KEY }}
+          AI_API_URL: ${{ secrets.AI_API_URL }}
+          AI_API_KEY: ${{ secrets.AI_API_KEY }}
+          AI_MODEL: ${{ secrets.AI_MODEL }}
+          OPENROUTER_MODEL: ${{ secrets.OPENROUTER_MODEL }}
+          OPENAI_API_URL: ${{ secrets.OPENAI_API_URL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          REDDIT_USER_AGENT: ${{ secrets.REDDIT_USER_AGENT }}
+          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          REDDIT_ACCESS_TOKEN: ${{ secrets.REDDIT_ACCESS_TOKEN }}
+          REDDIT_REFRESH_TOKEN: ${{ secrets.REDDIT_REFRESH_TOKEN }}
+          LUNARY_API_URL: ${{ secrets.LUNARY_API_URL }}
+          LUNARY_PUBLIC_KEY: ${{ secrets.LUNARY_PUBLIC_KEY }}
+          YT_ACCESS_TOKEN: ${{ secrets.YT_ACCESS_TOKEN }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          YT_SCOPE: ${{ secrets.YT_SCOPE }}
+          YT_EXPIRY_DATE: ${{ secrets.YT_EXPIRY_DATE }}
+          REDIS_HOST: ${{ secrets.REDIS_HOST }}
+          REDIS_PORT: ${{ secrets.REDIS_PORT }}
+          REDIS_USERNAME: ${{ secrets.REDIS_USERNAME }}
+          REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+
+      # Optional: Add steps here to commit the generated video back to the repo,
+      # upload it as an artifact, or notify somewhere.
+      # Example: Upload output as artifact
+      # - name: Upload generated video artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: generated-video
+      #     path: media/outputs/*.mp4 # Adjust path as needed

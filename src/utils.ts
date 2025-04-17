@@ -21,7 +21,7 @@ export class AsyncQueue {
         const results = await Promise.all(
           batch.map((fn) => fn())
         );
-        runResults = [...runResults, ...results];
+        runResults  = [...runResults, ...results];
       }
     }
   }

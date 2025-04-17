@@ -1,8 +1,8 @@
 import { createReadStream } from "fs";
 import { openai } from "./ai";
 
-import type { Readable } from "stream";
 import { writeFile } from "fs/promises";
+import type { Readable } from "stream";
 import type { RedditStory } from "./types";
 
 export async function generateTranscription(

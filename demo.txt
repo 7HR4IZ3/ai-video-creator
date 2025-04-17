@@ -1,0 +1,7 @@
+{
+    "access_token": "ya29.a0AZYkNZiWI35yeWynPNCr-W5RvDAdRfcU5YBDKoeQTkKhukkpPsZmQ8X4_FTdfUrvFN-ybxV7iIsIx4Gzq1bSxP7P9mT-acge4TbZJ2VbCZsxWaqbxKYs75rrJJkKS8xJpx4x70R2gu2F2Hx_SGSFB3FKQd-8ZVMca0zT3em8aCgYKAU4SARASFQHGX2Mi66lewfiLh5Ro1V-bQUNItg0175",
+    "refresh_token": "1//05kAFVq0BCW9XCgYIARAAGAUSNwF-L9IrWaqUqEl_L_4SOkluDYnjl1LqiL7F2gSOjr4QlHFGMgEQGB-dE96_nsQ1_cvbEr6aIug",
+    "scope": "https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube",
+    "token_type": "Bearer",
+    "expiry_date": 1744821412372
+  }
