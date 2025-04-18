@@ -7,6 +7,7 @@ const reddit = new Snoowrap({
   clientId: process.env.REDDIT_CLIENT_ID,
   clientSecret: process.env.REDDIT_CLIENT_SECRET,
   refreshToken: process.env.REDDIT_REFRESH_TOKEN,
+  accessToken: process.env.REDDIT_ACCESS_TOKEN,
 });
 
 export async function grabStories(subreddits: string[]): Promise<RedditStory[]> {
