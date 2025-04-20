@@ -1,7 +1,3 @@
-import dotenv from "dotenv";
-
-dotenv.config({ path: path.resolve(__dirname, "../.env") });
-
 import fs from "fs";
 import Redis from "ioredis";
 import { google } from "googleapis";
@@ -18,6 +14,7 @@ export async function uploadToYoutube(
 
   // OAuth2 configuration
   const oauth = new google.auth.OAuth2();
+  oauth.forceRefreshOnFailure = true;
 
   const redis = new Redis(
     Number.parseInt(process.env.REDIS_PORT!),
@@ -48,9 +45,9 @@ export async function uploadToYoutube(
 
   // Set credentials, prioritizing Redis tokens over environment variables
   const credentials = {
+    scope: process.env.YT_SCOPE, token_type: "Bearer",
     access_token: initialAccessToken ?? process.env.YT_ACCESS_TOKEN,
     refresh_token: initialRefreshToken ?? process.env.YT_REFRESH_TOKEN,
-    scope: process.env.YT_SCOPE, token_type: "Bearer",
     expiry_date: Number.parseInt(initialExpiryDate ?? process.env.YT_EXPIRY_DATE!),
   };
 
@@ -69,10 +66,11 @@ export async function uploadToYoutube(
     };
   }
 
+  console.log(credentials, { access: initialAccessToken, refresh: initialRefreshToken });
+
   oauth.setCredentials(credentials);
 
-  // Setup token refresh listener
-  oauth.on("tokens", async (tokens) => {
+  const cacheTokens = async (tokens: any) => {
     if (tokens.access_token) {
       console.log("[youtube]", "Storing new access token...");
       await redis.set(accessTokenKey, tokens.access_token);
@@ -91,11 +89,20 @@ export async function uploadToYoutube(
       console.log("[youtube]", "Storing new refresh token...");
       await redis.set(refreshTokenKey, tokens.refresh_token);
     }
+  }
+
+  // Setup token refresh listener
+  oauth.on("tokens", async (tokens) => {
+   console.log("[youtube]", "Tokens updated:", tokens);
+   await cacheTokens(tokens);
   });
 
   const youtube = google.youtube({
     version: "v3",
   });
+
+  const { credentials: refreshedCredentials } = await oauth["refreshAccessTokenAsync"]();
+  await cacheTokens(refreshedCredentials || {});
 
   try {
     console.log("[youtube]", `Attempting to upload video: ${title} from path: ${output.src}`);
@@ -112,7 +119,7 @@ export async function uploadToYoutube(
         },
       },
       media: {
-        body: output.stream,
+        body: fs.createReadStream(output.src),
       },
     });
 

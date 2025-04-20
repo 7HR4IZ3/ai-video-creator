@@ -1,4 +1,9 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+
+console.log(process.env.YT_ACCESS_TOKEN)
+
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
+
 
 import path from "path";
 import dedent from "dedent";
@@ -225,7 +230,7 @@ program
   .command("upload")
   .option("-s, --story <string>", "story name to upload (required)")
   .option(
-    "-p, --platforms <string>",
+    "-p, --platform <string>",
     "comma-separated list of platforms to upload to",
     "youtube"
   )
@@ -238,7 +243,7 @@ program
   .action(
     async (options: {
       story?: string;
-      platforms?: string;
+      platform?: string;
       privacy?: string;
     }) => {
       if (!options.story) {
@@ -267,7 +272,7 @@ program
       );
 
       // Parse platforms
-      const platforms = options.platforms?.split(",") || ["youtube"];
+      const platforms = options.platform?.split(",") || ["youtube"];
       const validPlatforms: UploadPlatform[] = [
         "youtube",
         "facebook",
