@@ -1,9 +1,7 @@
 import dotenv from "dotenv";
-
-console.log(process.env.YT_ACCESS_TOKEN)
-
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
+console.log(process.env)
 
 import path from "path";
 import dedent from "dedent";

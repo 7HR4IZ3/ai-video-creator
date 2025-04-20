@@ -66,7 +66,7 @@ export async function uploadToYoutube(
     };
   }
 
-  console.log(credentials, { access: initialAccessToken, refresh: initialRefreshToken });
+  // console.log(credentials, { access: initialAccessToken, refresh: initialRefreshToken });
 
   oauth.setCredentials(credentials);
 
