@@ -1,11 +1,13 @@
 # Import necessary libraries
 import os
-from pytube import YouTube
+from pytubefix import YouTube
 from pytube.exceptions import PytubeError, VideoUnavailable, RegexMatchError
+from pytubefix.cli import on_progress
+
 
 # --- Configuration ---
 # !!! IMPORTANT: Replace this with the actual YouTube video URL you want to download !!!
-video_url = "https://www.youtube.com/watch?v=u7kdVe8q5zs"
+video_url = "https://www.youtube.com/watch?v=952ILTHDgC4&pp=ygUibWluZWNyYWZ0IGdhbWVwbGF5IHZpZGVvIGNvcHlyaWdodA%3D%3D"
 
 # Define the output directory and filename
 output_dir = "media/videos"
@@ -29,7 +31,8 @@ def download_video(url, path, filename):
         # 2. Create YouTube object
         print(f"Connecting to YouTube for URL: {url}")
         yt = YouTube(
-            url, on_progress_callback=on_progress, on_complete_callback=on_complete
+            url, on_progress_callback=on_progress, on_complete_callback=on_complete,
+            # use_oauth=True, allow_oauth_cache=True
         )  # Add callbacks
 
         print(f"Successfully connected. Video Title: {yt.title}")
@@ -91,20 +94,6 @@ def download_video(url, path, filename):
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         print(f"Error Type: {type(e).__name__}")
-
-
-# --- Callback Functions (Optional but helpful for feedback) ---
-def on_progress(stream, chunk, bytes_remaining):
-    """Callback function for download progress."""
-    total_size = stream.filesize
-    bytes_downloaded = total_size - bytes_remaining
-    percentage = (bytes_downloaded / total_size) * 100
-    # Use carriage return '\r' to update the line in place
-    print(
-        f"\rDownloading... {percentage:.1f}% completed ({bytes_downloaded / (1024*1024):.2f}MB / {total_size / (1024*1024):.2f}MB)",
-        end="",
-    )
-
 
 def on_complete(stream, file_path):
     """Callback function for download completion."""

@@ -35,7 +35,7 @@ jobs:
         run: |
           python -m venv .venv
           source .venv/bin/activate
-          uv add moviepy click soundfile kokoro faster_whisper pytube
+          uv add moviepy click soundfile kokoro faster_whisper pytube pytubefix
 
       - name: Set up Filesystem
         run: |

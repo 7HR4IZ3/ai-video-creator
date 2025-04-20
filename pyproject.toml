@@ -8,5 +8,6 @@ dependencies = [
     "moviepy>=2.1.2",
     "playwright>=1.51.0",
     "pytube>=15.0.0",
+    "pytubefix>=8.12.3",
     "yt-dlp>=2025.3.31",
 ]
