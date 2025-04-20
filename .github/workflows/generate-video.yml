@@ -35,7 +35,7 @@ jobs:
         run: |
           python -m venv .venv
           source .venv/bin/activate
-          uv add moviepy click soundfile kokoro faster_whisper yt-dlp
+          uv add moviepy click soundfile kokoro faster_whisper pytube
 
       - name: Set up Filesystem
         run: |
@@ -47,9 +47,7 @@ jobs:
       
       - name: Download YouTube video
         run: |
-          mkdir -p videos
-          uv run yt-dlp "https://www.youtube.com/watch?v=u7kdVe8q5zs&pp=ygUibWluZWNyYWZ0IGdhbWVwbGF5IHZpZGVvIGNvcHlyaWdodA%3D%3D" \
-            -o "media/videos/minecraft.mp3"
+          python3 ./utils/download.py
 
       - name: Set up Environment Variables
         run: |
