@@ -32,6 +32,7 @@ def download_video(url, path, filename):
         print(f"Connecting to YouTube for URL: {url}")
         yt = YouTube(
             url, on_progress_callback=on_progress, on_complete_callback=on_complete,
+            client="WEB", use_po_token=True, token_file="utils/token"
             # use_oauth=True, allow_oauth_cache=True
         )  # Add callbacks
 
