@@ -3,7 +3,7 @@ name: Generate Social Video
 on:
   schedule:
     # Runs daily at midnight UTC
-    - cron: '0 0 * * *'
+    - cron: "0 0 * * *"
   workflow_dispatch:
 
 jobs:
@@ -24,8 +24,8 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x' # Or specify a specific version like '3.11'
-      
+          python-version: "3.x" # Or specify a specific version like '3.11'
+
       - name: Install the latest version of uv
         uses: astral-sh/setup-uv@v5
         with:
@@ -44,7 +44,7 @@ jobs:
           mkdir -p media/video
           mkdir -p media/outputs
           mkdir -p media/scripts
-      
+
       - name: Download YouTube video
         run: |
           python3 ./utils/download.py
@@ -57,4 +57,3 @@ jobs:
         # Generates 1 video using the filesystem uploader
         # Add secrets and adjust platform/options if uploading to external services
         run: bun src/index.ts generate --limit 3 --platform youtube
- 
