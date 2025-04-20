@@ -5,10 +5,6 @@ on:
     # Runs daily at midnight UTC
     - cron: '0 0 * * *'
   workflow_dispatch:
-    inputs:
-      video_url:
-        description: 'Full YouTube video URL to download'
-        required: true
 
 jobs:
   generate:
@@ -55,7 +51,7 @@ jobs:
       - name: Download YouTube video
         run: |
           mkdir -p videos
-          yt-dlp "${{ github.event.inputs.video_url }}" \
+          python3 -m yt-dlp "https://www.youtube.com/watch?v=u7kdVe8q5zs&pp=ygUibWluZWNyYWZ0IGdhbWVwbGF5IHZpZGVvIGNvcHlyaWdodA%3D%3D" \
             -o "media/videos/minecraft.mp3"
 
       - name: Set up Environment Variables
