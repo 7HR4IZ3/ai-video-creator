@@ -47,7 +47,7 @@ jobs:
 
       - name: Download YouTube video
         run: |
-          python3 ./utils/download.py
+          uv run ./utils/download.py
 
       - name: Set up Environment Variables
         run: |
