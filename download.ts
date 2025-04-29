@@ -3,7 +3,7 @@ import { chromium } from "playwright";
 const VIDEO_URL = "https://www.youtube.com/watch?v=u7kdVe8q5zs";
 
 const browser = await chromium.launch({
-  headless: false,
+  headless: true,
 });
 const context = await browser.newContext();
 const page = await context.newPage();
