@@ -47,7 +47,7 @@ jobs:
       
       - name: Setup Playwright
         run: |
-          playwright install chromium
+          bunx playwright install chromium
 
       - name: Download YouTube video
         run: |
