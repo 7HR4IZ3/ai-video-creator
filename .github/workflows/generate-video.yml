@@ -36,6 +36,7 @@ jobs:
           python -m venv .venv
           source .venv/bin/activate
           uv add moviepy click soundfile kokoro faster_whisper pytube pytubefix
+          apt-get -qq -y install espeak-ng
 
       - name: Set up Filesystem
         run: |

@@ -5,9 +5,13 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "click>=8.1.8",
+    "faster-whisper>=1.1.1",
+    "kokoro>=0.9.4",
     "moviepy>=2.1.2",
     "playwright>=1.51.0",
     "pytube>=15.0.0",
     "pytubefix>=8.12.3",
+    "soundfile>=0.13.1",
     "yt-dlp>=2025.3.31",
 ]

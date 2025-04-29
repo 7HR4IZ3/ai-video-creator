@@ -101,9 +101,12 @@ function generateAudioLocal(story: RedditStory) {
     );
 
     proc.on("error", reject);
-
-    proc.on("exit", () => {
-      resolve(readAsReadable({ filePath: outputPath }));
+    proc.on("exit", async (code) => {
+      try {
+        resolve(await readAsReadable({ filePath: outputPath }));
+      } catch {
+        reject(new Error("Failed to generate audio"));
+      }
     });
   });
 }
