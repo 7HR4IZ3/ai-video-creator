@@ -12,7 +12,7 @@ export function createUploadableVideo(
   { story }: { story: RedditStory }
 ): Promise<StreamSrc> {
   return new Promise((resolve, reject) => {
-    const audioPath = path.join(CWD, "media/audios", `${story.name}.mp3`);
+    const audioPath = audio.src;
     const videoPath = path.join(CWD, "media/videos", `minecraft.mp4`);
     const subtitlePath = path.join(CWD, "media/subtitles", `${story.name}.srt`);
     const outputPath = path.join(CWD, "media/outputs", `${story.name}.mp4`);
