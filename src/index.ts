@@ -1,8 +1,6 @@
 import dotenv from "dotenv";
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
-console.log(process.env)
-
 import path from "path";
 import dedent from "dedent";
 import { Command } from "commander";

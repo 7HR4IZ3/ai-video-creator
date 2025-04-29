@@ -60,4 +60,6 @@ jobs:
       - name: Run video generation script
         # Generates 1 video using the filesystem uploader
         # Add secrets and adjust platform/options if uploading to external services
-        run: bun src/index.ts generate --limit 3 --platform youtube
+        run: |
+          source .venv/bin/activate
+          bun src/index.ts generate --limit 3 --concurrent 1 --platform youtube

@@ -34,7 +34,7 @@ Ensure you respond with only the transformed story and nothing else
     ],
   });
 
-  console.log(response, response.choices)
+  // console.log(response, response.choices)
 
   if (!response.choices?.length) {
     throw new Error("No response from OpenAI");
