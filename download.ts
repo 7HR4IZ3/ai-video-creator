@@ -33,5 +33,5 @@ await page1.close();
 
 await page
   .getByRole("link", { name: "Download", exact: true })
-  .click({ timeout: 99999999999999999999999999 });
+  .click({ timeout: 0 });
 
