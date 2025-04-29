@@ -96,9 +96,17 @@ function generateAudioLocal(story: RedditStory) {
       [path.join(CWD, "utils/main.py"), "audio", "-o", outputPath, text],
       {
         cwd: process.cwd(),
-        stdio: "ignore",
+        stdio: "pipe",
       }
     );
+
+    proc.stdout.on("data", (data) => {
+      console.log(data.toString());
+    });
+
+    proc.stderr.on("data", (data) => {
+      console.error(data.toString());
+    });
 
     proc.on("error", reject);
     proc.on("exit", async (code) => {
