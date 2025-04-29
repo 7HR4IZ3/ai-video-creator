@@ -31,8 +31,12 @@ def download_video(url, path, filename):
         # 2. Create YouTube object
         print(f"Connecting to YouTube for URL: {url}")
         yt = YouTube(
-            url, on_progress_callback=on_progress, on_complete_callback=on_complete,
-            client="WEB", use_po_token=True, token_file="utils/token"
+            url,
+            on_progress_callback=on_progress,
+            on_complete_callback=on_complete,
+            proxies={
+                "http": "user-default_leOyf-country-US:Avengers2k19=oxylabs@dc.oxylabs.io:8001"
+            },
             # use_oauth=True, allow_oauth_cache=True
         )  # Add callbacks
 
@@ -46,9 +50,7 @@ def download_video(url, path, filename):
         # Filter for mp4, progressive, order by resolution descending, get the first (highest)
         stream = (
             yt.streams.filter(progressive=True, file_extension="mp4")
-            .order_by("resolution")
-            .desc()
-            .first()
+              .order_by("resolution").desc().first()
         )
 
         # Fallback if no progressive mp4 found (rare for popular videos)
@@ -95,6 +97,7 @@ def download_video(url, path, filename):
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         print(f"Error Type: {type(e).__name__}")
+
 
 def on_complete(stream, file_path):
     """Callback function for download completion."""

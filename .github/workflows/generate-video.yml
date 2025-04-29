@@ -44,10 +44,14 @@ jobs:
           mkdir -p media/video
           mkdir -p media/outputs
           mkdir -p media/scripts
+      
+      - name: Setup Playwright
+        run: |
+          playwright install chromium
 
       - name: Download YouTube video
         run: |
-          uv run ./utils/download.py
+          bun download.ts
 
       - name: Set up Environment Variables
         run: |

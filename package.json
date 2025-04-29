@@ -25,6 +25,7 @@
     "ioredis": "^5.6.1",
     "lunary": "^0.7.12",
     "openai": "^4.89.0",
+    "playwright": "^1.52.0",
     "pocketbase": "^0.25.2",
     "snoowrap": "^1.23.0",
     "ytdl-core": "^4.11.5"
