@@ -30,7 +30,7 @@ Please follow these guidelines in your transformation:
 Ensure you respond with only the transformed story and nothing else
 `,
       },
-      { role: "user", content: "Title: " + title + "\n\n" + story },
+      { role: "user", content: title + "\n\n" + story },
     ],
   });
 

@@ -57,113 +57,447 @@ def cli():
 
 @cli.command()
 @click.argument("text")
-@click.option("-s", "--speed", default=1, type=int, help="speech speed")
-@click.option("-v", "--voice", default="am_fenrir", help="ai voice to use")
 @click.option(
-    "-o", "--output", default="output.wav", help="audio output file", type=Path
+    "-s", "--speed", default=1, type=int, help="Speech speed.", show_default=True
 )
-def audio(
-    text: str, output: Path = "output.wav", voice: str = "am_fenrir", speed: int = 1
-):
-    """Convert TEXT to audio and save in OUTPUT
+@click.option(
+    "-v", "--voice", default="am_fenrir", help="AI voice to use.", show_default=True
+)
+@click.option(
+    "--pitch", default=1.0, type=float, help="Speech pitch.", show_default=True
+)
+@click.option(
+    "-o",
+    "--output",
+    required=True,
+    help="Audio output file path.",
+    type=Path,
+    show_default=True,
+)
+@click.option("--verbose", is_flag=True, default=True, help="Enable verbose output.")
+def audio(text: str, output: Path, voice: str, speed: int, pitch: float, verbose: bool):
+    """Convert TEXT to audio using Kokoro TTS and save to OUTPUT."""
+    if verbose:
+        click.echo(f"Generating audio for text: '{text[:50]}...'")
+        click.echo(f"Using voice: {voice}, speed: {speed}, pitch: {pitch}")
+        click.echo(f"Output file: {output}")
 
-    TEXT is the name of the file to check.
+    pipeline = KPipeline(
+        lang_code="a"
+    )  # Assuming Kokoro uses 'a' for automatic language detection or a generic setting
 
-    OUTPUT is the output path to save the audio.
-    """
-
-    pipeline = KPipeline(lang_code="a")
-
-    with soundfile.SoundFile(output.as_posix(), "w", 32000, 1) as out:
-        for _, _, audio in pipeline(text, voice=voice, speed=speed, split_pattern=r"\n"):
-            out.write(audio)
+    try:
+        with soundfile.SoundFile(output.as_posix(), "w", 24000, 1) as out:
+            # Note: Kokoro pipeline might not directly support pitch adjustment.
+            # This example assumes it does or ignores the pitch parameter if not supported.
+            # You might need to adjust this based on Kokoro's actual capabilities.
+            for _, _, audio_chunk in pipeline(
+                text, voice=voice, speed=speed, split_pattern=r"\n"
+            ):
+                out.write(audio_chunk)
+        if verbose:
+            click.echo(f"Successfully saved audio to {output}")
+    except Exception as e:
+        click.echo(f"Error generating audio: {e}", err=True)
 
 
 @cli.command()
-@click.option("-a", "--audio", help="audio input file", type=Path)
-@click.option("-v", "--video", help="video input file", type=Path)
-@click.option("-s", "--subtitle", help="subtitle path", type=Path)
-@click.option("-o", "--output", help="output file path", type=Path)
-@click.option("-f", "--format", default="tiktok", help="video format")
 @click.option(
-    "--font", default=BASE_DIR / "utils" / "font.ttf", type=Path, help="font path"
+    "-a",
+    "--audio",
+    required=True,
+    help="Audio input file path.",
+    type=Path,
+    show_default=True,
 )
+@click.option(
+    "-v",
+    "--video",
+    required=True,
+    help="Video input file path.",
+    type=Path,
+    show_default=True,
+)
+@click.option(
+    "-s",
+    "--subtitle",
+    required=True,
+    help="Subtitle file path (.srt or similar).",
+    type=Path,
+    show_default=True,
+)
+@click.option(
+    "-o",
+    "--output",
+    required=True,
+    help="Output video file path.",
+    type=Path,
+    show_default=True,
+)
+@click.option(
+    "-f",
+    "--format",
+    default="tiktok",
+    help="Output video format (e.g., tiktok, youtube).",
+    show_default=True,
+)
+@click.option(
+    "--font",
+    default=BASE_DIR / "utils" / "font.ttf",
+    type=Path,
+    help="Font file path for subtitles.",
+    show_default=True,
+)
+# --- Editor-specific Whisper options ---
+@click.option(
+    "--editor_model_size",
+    default="tiny",
+    help="Whisper model size for editor.",
+    show_default=True,
+)
+@click.option(
+    "--editor_device",
+    default="cpu",
+    help="Device for editor's Whisper model.",
+    show_default=True,
+)
+@click.option(
+    "--editor_compute_type",
+    default="int8",
+    help="Compute type for editor's Whisper model.",
+    show_default=True,
+)
+@click.option(
+    "--editor_batch_size",
+    default=10,
+    type=int,
+    help="Batch size for editor transcription.",
+    show_default=True,
+)
+# --- Subtitle Styling Options ---
+@click.option(
+    "--font_size",
+    default=22,
+    type=int,
+    help="Font size for subtitles.",
+    show_default=True,
+)
+@click.option(
+    "--font_color", default="white", help="Font color for subtitles.", show_default=True
+)
+@click.option(
+    "--stroke_color",
+    default="black",
+    help="Stroke color for subtitle text.",
+    show_default=True,
+)
+@click.option(
+    "--stroke_width",
+    default=1,
+    type=int,
+    help="Stroke width for subtitle text.",
+    show_default=True,
+)
+@click.option(
+    "--subtitle_position",
+    default="center",
+    help="Position of subtitles (e.g., center, bottom).",
+    show_default=True,
+)
+# --- Video Output Options ---
+@click.option(
+    "--video_codec",
+    default="libx264",
+    help="Video codec for output file.",
+    show_default=True,
+)
+@click.option(
+    "--audio_codec",
+    default="aac",
+    help="Audio codec for output file.",
+    show_default=True,
+)
+@click.option(
+    "--video_bitrate",
+    default=None,
+    help="Video bitrate for output file (e.g., '5000k').",
+)
+# --- General Options ---
+@click.option("--verbose", is_flag=True, default=True, help="Enable verbose output.")
 def editor(
     audio: Path,
     video: Path,
-    subtitle: Path,
+    subtitle: Path,  # Still required by signature, but generated internally. Consider removing if path isn't used.
     output: Path,
-    format: str = "tiktok",
-    font: Path = BASE_DIR / "utils" / "font.ttf",
+    format: str,
+    font: Path,
+    editor_model_size: str,
+    editor_device: str,
+    editor_compute_type: str,
+    editor_batch_size: int,
+    font_size: int,
+    font_color: str,
+    stroke_color: str,
+    stroke_width: int,
+    subtitle_position: str,
+    video_codec: str,
+    audio_codec: str,
+    video_bitrate: str | None,
+    verbose: bool,
 ):
-    """
-    Edit VIDEO with AUDIO and SUBTITLE to OUTPUT
-    """
+    """Edit VIDEO by adding AUDIO, generating and overlaying SUBTITLEs, and saving to OUTPUT."""
+    if verbose:
+        click.echo("Starting video editing process...")
+        click.echo(f"  Audio input: {audio}")
+        click.echo(f"  Video input: {video}")
+        click.echo(
+            f"  Subtitle path (for potential output, content generated): {subtitle}"
+        )
+        click.echo(f"  Output path: {output}")
+        click.echo(f"  Format: {format}")
+        click.echo(f"  Font: {font}")
+        click.echo("  --- Whisper Settings ---")
+        click.echo(
+            f"  Model Size: {editor_model_size}, Device: {editor_device}, Compute Type: {editor_compute_type}"
+        )
+        click.echo(f"  Batch Size: {editor_batch_size}")
+        click.echo("  --- Subtitle Style ---")
+        click.echo(f"  Font Size: {font_size}, Color: {font_color}")
+        click.echo(f"  Stroke Color: {stroke_color}, Stroke Width: {stroke_width}")
+        click.echo(f"  Position: {subtitle_position}")
+        click.echo("  --- Output Settings ---")
+        click.echo(f"  Video Codec: {video_codec}, Audio Codec: {audio_codec}")
+        click.echo(
+            f"  Video Bitrate: {'Default' if video_bitrate is None else video_bitrate}"
+        )
 
-    batched_model = BatchedInferencePipeline(
-        WhisperModel("tiny", device="cpu", compute_type="int8")
-    )
+    try:
+        # Initialize Whisper model for transcription using new options
+        if verbose:
+            click.echo("Initializing Whisper model...")
+        model = WhisperModel(
+            editor_model_size, device=editor_device, compute_type=editor_compute_type
+        )
+        batched_model = BatchedInferencePipeline(model=model)
 
-    audio_clip = moviepy.AudioFileClip(audio.as_posix())
-    video_clip = moviepy.VideoFileClip(video.as_posix())
+        if verbose:
+            click.echo("Loading audio and video clips...")
+        audio_clip = moviepy.AudioFileClip(audio.as_posix())
+        video_clip = moviepy.VideoFileClip(video.as_posix())
 
-    random_start = randint(0, int(video_clip.duration) - int(audio_clip.duration))
-    video_clip = (
-        video_clip.subclipped(random_start)
-        .with_duration(audio_clip.duration)
-        .with_audio(audio_clip)
-    )
-
-    subtitle_texts = []
-
-    subtitles, _ = batched_model.transcribe(
-        audio.as_posix(), batch_size=10, word_timestamps=True
-    )
-
-    # with open(subtitle.as_posix(), "a") as _:
-    # index = 0
-
-    for sub in subtitles:
-        for word in sub.words:
-            # sub_file.write(
-            #     f"{index}\n{float_srt(word.start)} --> {float_srt(word.end)}\n{word.word}\n\n"
-            # )
-            # index = index + 1
-
-            txt_clip = moviepy.TextClip(
-                font=font.as_posix(),
-                size=(
-                    int((video_clip.h * (9 / 16)) * 0.8),
-                    int(video_clip.h * 0.15),
-                ),
-                text=word.word,
-                font_size=22,
-                color="white",
-                method="caption",
-                stroke_color="black",
+        # Ensure video duration matches audio duration, starting from a random point
+        if video_clip.duration < audio_clip.duration:
+            click.echo("Error: Video duration is less than audio duration.", err=True)
+            return
+        random_start = randint(0, int(video_clip.duration) - int(audio_clip.duration))
+        video_clip = (
+            video_clip.subclipped(random_start)
+            .with_duration(audio_clip.duration)
+            .with_audio(audio_clip)
+        )
+        if verbose:
+            click.echo(
+                f"Video clipped to {audio_clip.duration:.2f}s starting at {random_start:.2f}s."
             )
-            txt_clip = (
-                txt_clip.with_position("center")
-                .with_start(word.start)
-                .with_end(word.end)
-                # .with_duration(word.end - word.start)
+
+        if verbose:
+            click.echo(f"Transcribing audio file: {audio}...")
+        subtitles_data, info = batched_model.transcribe(
+            audio.as_posix(),
+            batch_size=editor_batch_size,  # Use new option
+            word_timestamps=True,
+        )
+        if verbose:
+            click.echo(
+                f"Transcription complete. Language: {info.language} (Prob: {info.language_probability:.2f}), Duration: {info.duration:.2f}s"
             )
-            subtitle_texts.append(txt_clip)
+            click.echo(f"Generating subtitle TextClips...")
 
-    video_clip = moviepy.CompositeVideoClip([video_clip, *subtitle_texts])
+        subtitle_texts = []
+        # Optionally write generated subtitles to the specified subtitle file path
+        # Consider adding an option like --save_srt to control this explicitly
+        # if save_srt:
+        #     with open(subtitle.as_posix(), "w") as sub_file:
+        #         index = 0
+        #         for sub in subtitles_data:
+        #              for word in sub.words:
+        #                   srt_line = f"{index+1}\n{float_srt(word.start)} --> {float_srt(word.end)}\n{word.word.strip()}\n\n"
+        #                   sub_file.write(srt_line)
+        #                   index += 1
 
-    if format == "tiktok":
-        crop = get_crop_coordinates(video_clip.w, video_clip.h)
-        video_clip.cropped(
-            x1=crop["x1"],
-            x2=crop["x2"],
-            y1=crop["y1"],
-            y2=crop["y2"],
-            width=crop["w"],
-            height=crop["h"],
-        ).resized((720, 1280)).write_videofile(output.as_posix())
-    else:
-        video_clip.write_videofile("result.mp4")
+        for sub in subtitles_data:
+            for word in sub.words:
+                # Create TextClip for video overlay using new style options
+                txt_clip = moviepy.TextClip(
+                    font=font.as_posix(),
+                    size=(  # Keep dynamic sizing for now, could be made configurable
+                        int((video_clip.h * (9 / 16)) * 0.8),
+                        int(video_clip.h * 0.15),
+                    ),
+                    text=word.word.strip(),
+                    font_size=font_size,  # Use new option
+                    color=font_color,  # Use new option
+                    method="caption",
+                    stroke_color=stroke_color,  # Use new option
+                    stroke_width=stroke_width,  # Use new option
+                )
+                txt_clip = (
+                    txt_clip.with_position(subtitle_position)  # Use new option
+                    .with_start(word.start)
+                    .with_end(word.end)
+                )
+                subtitle_texts.append(txt_clip)
+
+        if verbose:
+            click.echo(f"Generated {len(subtitle_texts)} subtitle clips.")
+
+        if verbose:
+            click.echo("Compositing video and subtitles...")
+        final_clip = moviepy.CompositeVideoClip([video_clip, *subtitle_texts])
+
+        if format == "tiktok":
+            if verbose:
+                click.echo("Formatting for TikTok (9:16 aspect ratio)...")
+            crop = get_crop_coordinates(final_clip.w, final_clip.h)
+            final_clip = final_clip.cropped(
+                x1=crop["x1"],
+                y1=crop["y1"],
+                x2=crop["x2"],
+                y2=crop["y2"],
+            ).resized(height=1280)
+            final_clip = final_clip.cropped(x_center=final_clip.w / 2, width=720)
+
+        if verbose:
+            click.echo(f"Writing final video to {output}...")
+
+        # Use new output options
+        write_params = {
+            "codec": video_codec,
+            "audio_codec": audio_codec,
+            "threads": 4,  # Consider making configurable
+            "logger": (
+                "bar"
+            ),  # Show progress bar unless verbose
+        }
+        if video_bitrate:
+            write_params["bitrate"] = video_bitrate
+
+        final_clip.write_videofile(output.as_posix(), **write_params)
+
+        if verbose:
+            click.echo("Video editing complete.")
+
+    except Exception as e:
+        click.echo(f"An error occurred during video editing: {e}", err=True)
+
+
+@cli.command()
+@click.argument("audio_path", type=Path)
+@click.option(
+    "--model_size",
+    default="small",
+    help="Whisper model size (e.g., tiny, base, small, medium, large).",
+    show_default=True,
+)
+@click.option(
+    "--device",
+    default="cpu",
+    help="Device for computation (e.g., cpu, cuda).",
+    show_default=True,
+)
+@click.option(
+    "--compute_type",
+    default="int8",
+    help="Compute type (e.g., float16, int8).",
+    show_default=True,
+)
+@click.option(
+    "--batch_size",
+    default=16,
+    type=int,
+    help="Batch size for inference.",
+    show_default=True,
+)
+@click.option(
+    "--chunk_length",
+    default=3,
+    type=int,
+    help="Chunk length for batched inference (seconds).",
+    show_default=True,
+)
+@click.option(
+    "--temperature",
+    default=0.0,
+    type=float,
+    help="Temperature for sampling.",
+    show_default=True,
+)
+@click.option(
+    "--language",
+    default=None,
+    type=str,
+    help="Language code (e.g., en, es) for transcription. Default is auto-detect.",
+    show_default=True,
+)
+@click.option("--verbose", is_flag=True, default=False, help="Enable verbose output.")
+def transcribe(
+    audio_path: Path,
+    model_size: str,
+    device: str,
+    compute_type: str,
+    batch_size: int,
+    chunk_length: int,
+    temperature: float,
+    language: str | None,
+    verbose: bool,
+):
+    """Transcribe AUDIO_PATH using Faster Whisper."""
+    if verbose:
+        click.echo("Starting transcription process...")
+        click.echo(f"Audio input: {audio_path}")
+        click.echo(
+            f"Model size: {model_size}, Device: {device}, Compute Type: {compute_type}"
+        )
+        click.echo(
+            f"Batch size: {batch_size}, Chunk length: {chunk_length}, Temperature: {temperature}"
+        )
+        click.echo(f"Language: {'Auto-detect' if language is None else language}")
+
+    if not audio_path.exists():
+        click.echo(f"Error: Audio file not found at {audio_path}", err=True)
+        return
+
+    try:
+        if verbose:
+            click.echo("Initializing Whisper model...")
+        model = WhisperModel(model_size, device=device, compute_type=compute_type)
+        batched_model = BatchedInferencePipeline(model=model)
+
+        if verbose:
+            click.echo(f"Transcribing {audio_path}...")
+        segments, info = batched_model.transcribe(
+            audio_path.as_posix(),
+            batch_size=batch_size,
+            chunk_length=chunk_length,  # Ensure this matches expected unit (seconds)
+            temperature=temperature,
+            language=language,  # Pass language if specified
+        )
+
+        click.echo(
+            f"Detected language '{info.language}' with probability {info.language_probability:.2f}"
+        )
+        click.echo(f"Transcription (duration: {info.duration:.2f}s):")
+
+        for segment in segments:
+            click.echo(
+                f"[{segment.start:.2f}s -> {segment.end:.2f}s] {segment.text.strip()}"
+            )
+
+        if verbose:
+            click.echo("Transcription complete.")
+
+    except Exception as e:
+        click.echo(f"An error occurred during transcription: {e}", err=True)
 
 
 @cli.command()

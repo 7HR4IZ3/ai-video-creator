@@ -1,7 +1,6 @@
 aiofiles
 annotated-types
 anyio
-apiclient
 asttokens
 attrs
 av
@@ -82,7 +81,6 @@ networkx
 num2words
 numba
 numpy
-oauth2client
 onnxruntime
 openai
 opencv-python
@@ -167,3 +165,7 @@ websockets
 wrapt
 yt-dlp
 zamzar-sdk
+
+google-api-python-client
+google-auth
+google-auth-oauthlib

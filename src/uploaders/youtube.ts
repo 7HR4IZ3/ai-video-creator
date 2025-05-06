@@ -2,19 +2,56 @@ import fs from "fs";
 import Redis from "ioredis";
 import { google } from "googleapis";
 import GoogleAuth from "google-auth-library";
-import path from "path";
+import axios from "axios";
 import type { StreamSrc } from "../types";
+import path from "path";
+
+// Use environment variables for sensitive information
+// const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+// const SERVER_UPLOAD_URL = process.env.SERVER_UPLOAD_URL;
+// In a real app, you might also need an API key here to authenticate with the server
+
+// Connect to Redis
+// const redis = new Redis(REDIS_URL);
+
+const SERVICE_ACCOUNT_KEY_FILE = path.join(
+  __dirname,
+  "../../.secrets",
+  "google_service_account.json"
+);
+// const USER_TO_IMPERSONATE = 'gamerxville@gmail.com';
+
+// redis.on('connect', () => {
+//   console.log('Connected to Redis');
+// });
+
+// redis.on('error', (err) => {
+//   console.error('Redis error:', err);
+// });
 
 export async function uploadToYoutube(
   output: StreamSrc,
   title: string,
   description: string,
-  privacy: string = "public"
+  privacy: string = "public",
+  retrying: boolean = false
 ) {
-
   // OAuth2 configuration
-  const oauth = new google.auth.OAuth2();
-  oauth.forceRefreshOnFailure = true;
+  // const oauth = new google.auth.OAuth2();
+  // oauth.forceRefreshOnFailure = true;
+
+  // const auth = new google.auth.GoogleAuth({
+  //   keyFile: SERVICE_ACCOUNT_KEY_FILE,
+  //   scopes: [
+  //     "https://www.googleapis.com/auth/youtube",
+  //     "https://www.googleapis.com/auth/youtube.force-ssl",
+  //     "https://www.googleapis.com/auth/youtube.upload",
+  //     "https://www.googleapis.com/auth/youtubepartner",
+  //   ],
+  // });
+
+  // // Authorize to obtain access token
+  // await auth.getAccessToken();
 
   const redis = new Redis(
     Number.parseInt(process.env.REDIS_PORT!),
@@ -23,7 +60,7 @@ export async function uploadToYoutube(
       username: process.env.REDIS_USERNAME,
       password: process.env.REDIS_PASSWORD,
     }
-  ); // Connects to 127.0.0.1:6379 by default
+  );
 
   // Define Redis keys
   const accessTokenKey = "youtube:access_token";
@@ -40,33 +77,37 @@ export async function uploadToYoutube(
     hasRefreshToken: !!initialRefreshToken,
   });
 
-  const usingRedisAccessToken = !!initialAccessToken;
-  const usingRedisRefreshToken = !!initialRefreshToken;
-
   // Set credentials, prioritizing Redis tokens over environment variables
   const credentials = {
-    scope: process.env.YT_SCOPE, token_type: "Bearer",
-    access_token: initialAccessToken ?? process.env.YT_ACCESS_TOKEN,
-    refresh_token: initialRefreshToken ?? process.env.YT_REFRESH_TOKEN,
-    expiry_date: Number.parseInt(initialExpiryDate ?? process.env.YT_EXPIRY_DATE!),
+    scope: process.env.YOUTBE_SCOPE,
+    token_type: "Bearer",
+    access_token: initialAccessToken ?? process.env.YOUTBE_ACCESS_TOKEN,
+    refresh_token: initialRefreshToken ?? process.env.YOUTBE_REFRESH_TOKEN,
+    expiry_date: Number.parseInt(
+      initialExpiryDate ?? process.env.YOUTBE_EXPIRY_DATE!
+    ),
   };
 
-  console.log("[youtube]", `Using ${usingRedisAccessToken ? "Redis" : "ENV"} access token.`);
-  console.log("[youtube]", 
-    `Using ${usingRedisRefreshToken ? "Redis" : "ENV"} refresh token.`
-  );
+  // console.log("[youtube]", `Using ${usingRedisAccessToken ? "Redis" : "ENV"} access token.`);
+  // console.log("[youtube]",
+  //   `Using ${usingRedisRefreshToken ? "Redis" : "ENV"} refresh token.`
+  // );
 
-  if (!credentials.access_token || !credentials.refresh_token) {
-    console.error(
-      "Error: Missing access token or refresh token. Cannot proceed with YouTube upload."
-    );
-    return {
-      success: false,
-      error: "Missing YouTube API credentials.",
-    };
-  }
+  // if (!credentials.access_token || !credentials.refresh_token) {
+  //   console.error(
+  //     "Error: Missing access token or refresh token. Cannot proceed with YouTube upload."
+  //   );
+  //   return {
+  //     success: false,
+  //     error: "Missing YouTube API credentials.",
+  //   };
+  // }
 
   // console.log(credentials, { access: initialAccessToken, refresh: initialRefreshToken });
+
+  const oauth = new google.auth.OAuth2();
+  // console.log((await auth.getClient()).credentials);
+  // oauth.setCredentials((await auth.getClient()).credentials);
 
   oauth.setCredentials(credentials);
 
@@ -89,33 +130,36 @@ export async function uploadToYoutube(
       console.log("[youtube]", "Storing new refresh token...");
       await redis.set(refreshTokenKey, tokens.refresh_token);
     }
-  }
+  };
 
   // Setup token refresh listener
   oauth.on("tokens", async (tokens) => {
-   console.log("[youtube]", "Tokens updated:", tokens);
-   await cacheTokens(tokens);
+    console.log("[youtube]", "Tokens updated:", tokens);
+    await cacheTokens(tokens);
   });
 
   const youtube = google.youtube({
     version: "v3",
+    // auth: google.auth.fromAPIKey("AIzaSyBjD4w3H5Qg4sdl60Kq_HSB9dKv15zSDRA"),
+    // auth: oauth,
   });
 
-  const { credentials: refreshedCredentials } = await oauth["refreshAccessTokenAsync"]();
-  await cacheTokens(refreshedCredentials || {});
-
   try {
-    console.log("[youtube]", `Attempting to upload video: ${title} from path: ${output.src}`);
+    console.log(
+      "[youtube]",
+      `Attempting to upload video: ${title} from path: ${output.src}`
+    );
     const fileSize = fs.statSync(output.src).size;
     console.log("[youtube]", `File size: ${fileSize} bytes`);
 
     const response = await youtube.videos.insert({
       auth: oauth,
-      part: ["snippet", "status"], // Corrected: array of strings
+      part: ["snippet", "status"],
       requestBody: {
-        snippet: { title, description },
+        snippet: { title: title + "#Shorts", description },
         status: {
-          privacyStatus: privacy, // 'private', 'public', or 'unlisted'
+          privacyStatus: privacy,
+          madeForKids: true
         },
       },
       media: {
@@ -123,7 +167,10 @@ export async function uploadToYoutube(
       },
     });
 
-    console.log("[youtube]", `Successfully uploaded video! Video ID: ${response.data.id}`);
+    console.log(
+      "[youtube]",
+      `Successfully uploaded video! Video ID: ${response.data.id}`
+    );
     return {
       success: true,
       videoId: response.data.id,
@@ -136,6 +183,16 @@ export async function uploadToYoutube(
       error.response?.data?.error?.message ||
       error.message ||
       "Unknown error during upload";
+
+    const { credentials: refreshedCredentials } = await oauth[
+      "refreshAccessTokenAsync"
+    ]();
+    await cacheTokens(refreshedCredentials);
+
+    if (!retrying) {
+      return await uploadToYoutube(output, title, description, privacy, true);
+    }
+
     return {
       success: false,
       error: errorMessage,

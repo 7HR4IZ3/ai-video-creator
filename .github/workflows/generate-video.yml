@@ -33,20 +33,16 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          python -m venv .venv
+          python -m venv .
           source .venv/bin/activate
-          uv add moviepy click soundfile kokoro faster_whisper pytube pytubefix
+          uv add moviepy click soundfile kokoro faster_whisper pytube pytubefix en-core-web-sm
           sudo apt-get -qq -y install espeak-ng
           sudo apt-get -y install python3-pip
 
       - name: Set up Filesystem
         run: |
-          mkdir -p media
-          mkdir -p media/audio
-          mkdir -p media/video
-          mkdir -p media/outputs
-          mkdir -p media/scripts
-      
+          mkdir -p media media/audios media/videos media/outputs media/scripts .secrets
+
       - name: Setup Playwright
         run: |
           bunx playwright install chromium
@@ -58,6 +54,7 @@ jobs:
       - name: Set up Environment Variables
         run: |
           echo "${{ secrets.ENV_FILE }}" >> .env
+          echo "${{ secrets.SECRETS_FILE }}" >> .secrets/google_client_secret.json
 
       - name: Run video generation script
         # Generates 1 video using the filesystem uploader
