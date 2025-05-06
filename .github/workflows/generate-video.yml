@@ -34,7 +34,7 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m venv .
-          source .venv/bin/activate
+          source ./bin/activate
           uv add moviepy click soundfile kokoro faster_whisper pytube pytubefix en-core-web-sm
           sudo apt-get -qq -y install espeak-ng
           sudo apt-get -y install python3-pip

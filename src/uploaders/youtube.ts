@@ -37,8 +37,8 @@ export async function uploadToYoutube(
   retrying: boolean = false
 ) {
   // OAuth2 configuration
-  // const oauth = new google.auth.OAuth2();
-  // oauth.forceRefreshOnFailure = true;
+  const oauth = new google.auth.OAuth2();
+  oauth.forceRefreshOnFailure = true;
 
   // const auth = new google.auth.GoogleAuth({
   //   keyFile: SERVICE_ACCOUNT_KEY_FILE,
@@ -77,7 +77,7 @@ export async function uploadToYoutube(
     hasRefreshToken: !!initialRefreshToken,
   });
 
-  // Set credentials, prioritizing Redis tokens over environment variables
+  // // Set credentials, prioritizing Redis tokens over environment variables
   const credentials = {
     scope: process.env.YOUTBE_SCOPE,
     token_type: "Bearer",
@@ -105,7 +105,6 @@ export async function uploadToYoutube(
 
   // console.log(credentials, { access: initialAccessToken, refresh: initialRefreshToken });
 
-  const oauth = new google.auth.OAuth2();
   // console.log((await auth.getClient()).credentials);
   // oauth.setCredentials((await auth.getClient()).credentials);
 
@@ -138,9 +137,10 @@ export async function uploadToYoutube(
     await cacheTokens(tokens);
   });
 
+  const token = await oauth.getAccessToken();
+
   const youtube = google.youtube({
     version: "v3",
-    // auth: google.auth.fromAPIKey("AIzaSyBjD4w3H5Qg4sdl60Kq_HSB9dKv15zSDRA"),
     // auth: oauth,
   });
 
@@ -153,13 +153,15 @@ export async function uploadToYoutube(
     console.log("[youtube]", `File size: ${fileSize} bytes`);
 
     const response = await youtube.videos.insert({
-      auth: oauth,
+      auth: oauth, access_token: token.token ?? undefined,
       part: ["snippet", "status"],
       requestBody: {
-        snippet: { title: title + "#Shorts", description },
+        snippet: {
+          description, title,
+          channelId: "UCrsRopRjOOt_09sC1bvH2hA",
+        },
         status: {
-          privacyStatus: privacy,
-          madeForKids: true
+          privacyStatus: privacy
         },
       },
       media: {
@@ -184,10 +186,10 @@ export async function uploadToYoutube(
       error.message ||
       "Unknown error during upload";
 
-    const { credentials: refreshedCredentials } = await oauth[
-      "refreshAccessTokenAsync"
-    ]();
-    await cacheTokens(refreshedCredentials);
+    // const { credentials: refreshedCredentials } = await oauth[
+    //   "refreshAccessTokenAsync"
+    // ]();
+    // await cacheTokens(refreshedCredentials);
 
     if (!retrying) {
       return await uploadToYoutube(output, title, description, privacy, true);
