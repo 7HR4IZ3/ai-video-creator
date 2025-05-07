@@ -137,7 +137,7 @@ export async function uploadToYoutube(
     await cacheTokens(tokens);
   });
 
-  const token = await oauth.getAccessToken();
+  // const token = await oauth.getAccessToken();
 
   const youtube = google.youtube({
     version: "v3",
@@ -153,7 +153,7 @@ export async function uploadToYoutube(
     console.log("[youtube]", `File size: ${fileSize} bytes`);
 
     const response = await youtube.videos.insert({
-      auth: oauth, access_token: token.token ?? undefined,
+      auth: oauth,
       part: ["snippet", "status"],
       requestBody: {
         snippet: {
