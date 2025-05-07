@@ -35,7 +35,7 @@ jobs:
         run: |
           python -m venv .venv
           source .venv/bin/activate
-          uv add moviepy click soundfile kokoro faster_whisper pytube pytubefix en-core-web-sm@https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
+          uv add moviepy click soundfile kokoro faster_whisper pytube pytubefix en-core-web-sm@https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl https://github.com/nari-labs/dia.git
           sudo apt-get -qq -y install espeak-ng
           sudo apt-get -y install python3-pip
 
@@ -57,8 +57,18 @@ jobs:
           echo "${{ secrets.SECRETS_FILE }}" >> .secrets/google_client_secret.json
 
       - name: Run video generation script
-        # Generates 1 video using the filesystem uploader
-        # Add secrets and adjust platform/options if uploading to external services
         run: |
           source .venv/bin/activate
-          bun src/index.ts generate --limit 3 --concurrent 1 --platform youtube
+          bun src/index.ts generate --limit 3 --concurrent 1 --platform youtube --use-dia --skip-upload
+
+      - name: Upload output videos
+        uses: actions/upload-artifact@v3
+        with:
+          name: generated-videos
+          path: media/outputs/**/*.mp4
+
+      - name: Run video generation script
+        run: |
+          source .venv/bin/activate
+          bun src/index.ts upload --platform youtube --story all
+      

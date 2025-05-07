@@ -214,6 +214,19 @@ wheels = [
 ]
 
 [[package]]
+name = "click-config-file"
+version = "0.6.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "configobj" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/13/09/dfee76b0d2600ae8bd65e9cc375b6de62f6ad5600616a78ee6209a9f17f3/click_config_file-0.6.0.tar.gz", hash = "sha256:ded6ec1a73c41280727ec9c06031e929cdd8a5946bf0f99c0c3db3a71793d515", size = 5800 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/28/16/c71980d10b75cf4ee2c71bb946c3326a18585254399aac64a5e79cfba5a5/click_config_file-0.6.0-py2.py3-none-any.whl", hash = "sha256:3c5802dec437ed596f181efc988f62b1069cd48a912e280cd840ee70580f39d7", size = 5964 },
+]
+
+[[package]]
 name = "cloudpathlib"
 version = "0.21.0"
 source = { registry = "https://pypi.org/simple" }
@@ -254,6 +267,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/51/d3/57c6631159a1b48d273b40865c315cf51f89df7a9d1101094ef12e3a37c2/confection-0.1.5.tar.gz", hash = "sha256:8e72dd3ca6bd4f48913cd220f10b8275978e740411654b6e8ca6d7008c590f0e", size = 38924 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0c/00/3106b1854b45bd0474ced037dfe6b73b90fe68a68968cef47c23de3d43d2/confection-0.1.5-py3-none-any.whl", hash = "sha256:e29d3c3f8eac06b3f77eb9dfb4bf2fc6bcc9622a98ca00a698e3d019c6430b14", size = 35451 },
+]
+
+[[package]]
+name = "configobj"
+version = "5.0.9"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f5/c4/c7f9e41bc2e5f8eeae4a08a01c91b2aea3dfab40a3e14b25e87e7db8d501/configobj-5.0.9.tar.gz", hash = "sha256:03c881bbf23aa07bccf1b837005975993c4ab4427ba57f959afdd9d1a2386848", size = 101518 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a6/c4/0679472c60052c27efa612b4cd3ddd2a23e885dcdc73461781d2c802d39e/configobj-5.0.9-py2.py3-none-any.whl", hash = "sha256:1ba10c5b6ee16229c79a05047aeda2b55eb4e80d7c7d8ecf17ec1ca600c79882", size = 35615 },
 ]
 
 [[package]]
@@ -357,6 +379,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/43/fa/6d96a0978d19e17b68d634497769987b16c8f4cd0a7a05048bec693caa6b/decorator-5.2.1.tar.gz", hash = "sha256:65f266143752f734b0a7cc83c46f4618af75b8c5911b00ccb61d0ac9b6da0360", size = 56711 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/4e/8c/f3147f5c4b73e7550fe5f9352eaa956ae838d5c51eb58e7a25b9f3e2643b/decorator-5.2.1-py3-none-any.whl", hash = "sha256:d316bb415a2d9e2d2b3abcc4084c6502fc09240e292cd76a76afc106a1c8e04a", size = 9190 },
+]
+
+[[package]]
+name = "dia"
+version = "0.1.8"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "click" },
+    { name = "click-config-file" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/03/5d/8c445c0b4b0db4694f2b423958ac38f47a5719a9166994f714f663cd1e9e/dia-0.1.8.tar.gz", hash = "sha256:592d04a7dec06c5b4dc411701b46615194608ec7859becbe75ac795d41c8a4fa", size = 17500 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/45/d4/d7b0f597d083e2f8b11f0f8fbbabbfe4f1331b4ac70baf063547dcbdab1c/dia-0.1.8-py3-none-any.whl", hash = "sha256:66faeae2b1162f8a1a8ce3f57476c7699cd5f3eb51d04d44197afaa5df515bc6", size = 18216 },
 ]
 
 [[package]]
@@ -2026,6 +2061,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "apiclient" },
     { name = "click" },
+    { name = "dia" },
     { name = "en-core-web-sm" },
     { name = "faster-whisper" },
     { name = "google-api-python-client" },
@@ -2043,6 +2079,7 @@ dependencies = [
 requires-dist = [
     { name = "apiclient", specifier = ">=1.0.4" },
     { name = "click", specifier = ">=8.1.8" },
+    { name = "dia", specifier = ">=0.1.8" },
     { name = "en-core-web-sm", url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" },
     { name = "faster-whisper", specifier = ">=1.1.1" },
     { name = "google-api-python-client", specifier = ">=2.169.0" },

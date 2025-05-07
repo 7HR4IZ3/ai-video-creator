@@ -86,17 +86,26 @@ async function generateAudioZyphra(story: RedditStory) {
   return { src: AUDIO_SRC, stream: Readable.from(buffer) };
 }
 
-function generateAudioLocal(story: RedditStory) {
+function generateAudioLocal(story: RedditStory, useDia?: boolean) {
   return new Promise<StreamSrc>(async (resolve, reject) => {
     const outputPath = path.join(CWD, "media/audios", `${story.name}.mp3`);
     const text = await processText(story.title, story.body);
 
-    const proc = spawn(
-      "python3",
-      [path.join(CWD, "utils/main.py"), "audio", "-o", outputPath, text],
-      {
-        cwd: process.cwd(),
-        stdio: "pipe",
+    const scriptArgs = [
+      path.join(CWD, "utils/main.py"),
+      "audio",
+      "-o",
+      outputPath,
+    ];
+
+    if (useDia) {
+      scriptArgs.push("--use-dia");
+    }
+    scriptArgs.push(text);
+
+    const proc = spawn("python3", scriptArgs, {
+      cwd: process.cwd(),
+      stdio: "pipe",
       }
     );
 
@@ -119,7 +128,7 @@ function generateAudioLocal(story: RedditStory) {
   });
 }
 
-export async function generateAudio(story: RedditStory) {
+export async function generateAudio(story: RedditStory, useDia?: boolean) {
   const outputPath = path.join(CWD, "media/audios", `${story.name}.mp3`);
   if (await fs.promises.exists(outputPath)) {
     return await readAsReadable({ filePath: outputPath });
@@ -132,10 +141,16 @@ export async function generateAudio(story: RedditStory) {
   } else if (process.env.AUDIO_GENERATOR === "zyphra") {
     return generateAudioZyphra(story);
   } else if (process.env.AUDIO_GENERATOR === "local") {
-    return generateAudioLocal(story);
+    return generateAudioLocal(story, useDia); // Pass useDia to local generator
   } else {
+    // Default or fallback if no generator is specified, could be local without Dia
+    // or throw an error as before. For now, let's assume local if not specified.
+    // Consider if a default behavior or stricter check is needed.
+    // If AUDIO_GENERATOR is undefined or an unknown value, and you want to default to local:
+    // return generateAudioLocal(story, useDia);
+    // Or, to maintain current behavior of throwing error for unconfigured/unknown:
     throw new Error(
-      `Unsupported audio generator: ${process.env.AUDIO_GENERATOR}`
+      `Unsupported or unspecified audio generator: ${process.env.AUDIO_GENERATOR}`
     );
   }
 }

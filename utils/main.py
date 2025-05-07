@@ -3,6 +3,8 @@ import moviepy
 import datetime
 import soundfile
 
+# Removed Dia import from here, will be imported conditionally
+
 from sys import argv
 from pathlib import Path
 from random import randint
@@ -75,29 +77,71 @@ def cli():
     show_default=True,
 )
 @click.option("--verbose", is_flag=True, default=True, help="Enable verbose output.")
-def audio(text: str, output: Path, voice: str, speed: int, pitch: float, verbose: bool):
-    """Convert TEXT to audio using Kokoro TTS and save to OUTPUT."""
+@click.option(
+    "--use-dia", is_flag=True, default=False, help="Use Dia model for audio generation."
+)
+def audio(
+    text: str,
+    output: Path,
+    voice: str,
+    speed: int,
+    pitch: float,
+    verbose: bool,
+    use_dia: bool,
+):
+    """Convert TEXT to audio and save to OUTPUT. Supports Kokoro TTS and Dia."""
     if verbose:
         click.echo(f"Generating audio for text: '{text[:50]}...'")
-        click.echo(f"Using voice: {voice}, speed: {speed}, pitch: {pitch}")
+        if use_dia:
+            click.echo("Attempting to use Dia model.")
+        else:
+            click.echo(
+                f"Using Kokoro TTS with voice: {voice}, speed: {speed}, pitch: {pitch}"
+            )
         click.echo(f"Output file: {output}")
 
-    pipeline = KPipeline(
-        lang_code="a"
-    )  # Assuming Kokoro uses 'a' for automatic language detection or a generic setting
-
     try:
-        with soundfile.SoundFile(output.as_posix(), "w", 24000, 1) as out:
-            # Note: Kokoro pipeline might not directly support pitch adjustment.
-            # This example assumes it does or ignores the pitch parameter if not supported.
-            # You might need to adjust this based on Kokoro's actual capabilities.
-            for _, _, audio_chunk in pipeline(
-                text, voice=voice, speed=speed, split_pattern=r"\n"
-            ):
-                out.write(audio_chunk)
-        if verbose:
-            click.echo(f"Successfully saved audio to {output}")
+        if use_dia:
+            try:
+                from dia.model import Dia  # Conditional import
+
+                if verbose:
+                    click.echo("Loading Dia model...")
+                model = Dia.from_pretrained(
+                    "nari-labs/Dia-1.6B"
+                )  # Or your preferred model
+                if verbose:
+                    click.echo("Generating audio with Dia...")
+                dia_output = model.generate(text)
+                # Using 44100 sample rate as in your example.
+                soundfile.write(output.as_posix(), dia_output, 44100)
+                if verbose:
+                    click.echo(f"Successfully saved Dia audio to {output}")
+            except ImportError:
+                click.echo(
+                    "Error: Dia model selected, but 'dia-model' package is not installed.",
+                    err=True,
+                )
+                click.echo(
+                    "Please install it by running: pip install dia-model", err=True
+                )
+                return  # Exit if Dia is required but not available
+            except Exception as e:
+                click.echo(f"Error during Dia audio generation: {e}", err=True)
+                return
+        else:
+            pipeline = KPipeline(lang_code="a")
+            with soundfile.SoundFile(
+                output.as_posix(), "w", 24000, 1
+            ) as out:  # Kokoro default SR
+                for _, _, audio_chunk in pipeline(
+                    text, voice=voice, speed=speed, split_pattern=r"\n"
+                ):
+                    out.write(audio_chunk)
+            if verbose:
+                click.echo(f"Successfully saved Kokoro TTS audio to {output}")
     except Exception as e:
+        # General exception for Kokoro or other issues outside Dia-specific block
         click.echo(f"Error generating audio: {e}", err=True)
 
 
@@ -375,9 +419,7 @@ def editor(
             "codec": video_codec,
             "audio_codec": audio_codec,
             "threads": 4,  # Consider making configurable
-            "logger": (
-                "bar"
-            ),  # Show progress bar unless verbose
+            "logger": ("bar"),  # Show progress bar unless verbose
         }
         if video_bitrate:
             write_params["bitrate"] = video_bitrate

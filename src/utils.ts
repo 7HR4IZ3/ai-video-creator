@@ -3,17 +3,17 @@ import fs from "node:fs";
 import path from "node:path";
 
 
-export class AsyncQueue {
+export class AsyncQueue<T> {
   constructor(private queue: (() => Promise<any>)[] = []) {}
 
   async add(fn: () => Promise<any>) {
     this.queue.push(fn);
   }
 
-  async run(config: { concurrency: number}) {
+  async run(config: { concurrency: number}): Promise<T[]> {
     const { concurrency } = config;
     const queue = [...this.queue];
-    let runResults: any[] = [];
+    let runResults: T[] = [];
 
     while (queue.length > 0) {
       const batch = queue.splice(0, concurrency);
@@ -24,6 +24,8 @@ export class AsyncQueue {
         runResults  = [...runResults, ...results];
       }
     }
+
+    return runResults;
   }
 }
 
