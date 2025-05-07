@@ -62,7 +62,7 @@ jobs:
           bun src/index.ts generate --limit 3 --concurrent 1 --platform youtube --use-dia --skip-upload
 
       - name: Upload output videos
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: generated-videos
           path: media/outputs/**/*.mp4
