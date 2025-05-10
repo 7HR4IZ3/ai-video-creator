@@ -59,7 +59,7 @@ jobs:
       - name: Run video generation script
         run: |
           source .venv/bin/activate
-          bun src/index.ts generate --limit 3 --concurrent 1 --platform youtube --use-dia --skip-upload
+          bun src/index.ts generate --limit 3 --concurrent 1 --platform youtube --skip-upload
 
       - name: Upload output videos
         uses: actions/upload-artifact@v4
