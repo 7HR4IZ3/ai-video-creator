@@ -39,3 +39,8 @@ await page1.close();
 await page
   .getByRole("link", { name: "Download", exact: true })
   .click({ timeout: 0 });
+
+setTimeout(() => {
+  console.log("Force closing browser!");
+  process.exit(0);
+}, 10 * 60 * 1000);
