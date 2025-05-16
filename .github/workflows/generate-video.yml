@@ -35,7 +35,7 @@ jobs:
         run: |
           python -m venv .venv
           source .venv/bin/activate
-          uv add moviepy click soundfile kokoro faster_whisper pytube pytubefix en-core-web-sm@https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl https://github.com/nari-labs/dia.git
+          uv add moviepy click soundfile kokoro faster_whisper pytube pytubefix en-core-web-sm@https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
           sudo apt-get -qq -y install espeak-ng
           sudo apt-get -y install python3-pip
 
@@ -59,7 +59,7 @@ jobs:
       - name: Run video generation script
         run: |
           source .venv/bin/activate
-          bun src/index.ts generate --limit 3 --concurrent 1 --platform youtube --use-dia --skip-upload
+          bun src/index.ts generate --limit 3 --concurrent 1 --platform youtube --skip-upload
 
       - name: Upload output videos
         uses: actions/upload-artifact@v4
