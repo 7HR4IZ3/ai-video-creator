@@ -23,6 +23,8 @@ export class AsyncQueue<T> {
         );
         runResults  = [...runResults, ...results];
       }
+
+      console.log(queue.length)
     }
 
     return runResults;

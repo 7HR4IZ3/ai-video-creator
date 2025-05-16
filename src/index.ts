@@ -179,7 +179,7 @@ program
             ", "
           )}`
         );
-        return;
+        return process.exit(0);
       }
 
       if (options.story) {
@@ -272,7 +272,7 @@ program
         console.error(
           "[❌]: Story name or 'all' is required for the --story option"
         );
-        return;
+        return process.exit(0);
       }
 
       // Common platform validation
@@ -291,7 +291,7 @@ program
           `[❌]: Invalid platforms: ${invalidPlatforms.join(", ")}`
         );
         console.error(`[ℹ️]: Valid options are: ${validPlatforms.join(", ")}`);
-        return;
+        return process.exit(0);
       }
 
       if (options.story.toLowerCase() === "all") {
@@ -309,7 +309,7 @@ program
 
           if (videoFiles.length === 0) {
             console.log("[ℹ️]: No .mp4 files found in media/outputs.");
-            return;
+            return process.exit(0);
           }
 
           console.log(`[ℹ️]: Found ${videoFiles.length} video(s) to process.`);
@@ -371,7 +371,7 @@ program
             console.log(
               "[ℹ️]: No videos found with corresponding script files."
             );
-            return;
+            return process.exit(0);
           }
 
           // Explicitly type the result of uploadQueue.run
@@ -416,7 +416,7 @@ program
           console.error(
             `[❌]: Story or video file not found for "${options.story}"`
           );
-          return;
+          return process.exit(0);
         }
 
         const story: RedditStory = await readFile(storyPath, "utf-8").then(
@@ -442,6 +442,7 @@ program
           }
         }
       }
+      return process.exit(0);
     }
   );
 
@@ -499,7 +500,7 @@ program
       console.error(
         `[❌]: No platform selected. Options are: ${validPlatforms.join(", ")}`
       );
-      return;
+      return process.exit(0);
     }
 
     if (!validPlatforms.includes(platform)) {
@@ -508,7 +509,7 @@ program
           ", "
         )}`
       );
-      return;
+      return process.exit(0);
     }
 
     console.log(`[🔧]: Configuration guide for ${platform}:`);
