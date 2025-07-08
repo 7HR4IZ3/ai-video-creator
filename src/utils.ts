@@ -1,7 +1,6 @@
-
 import fs from "node:fs";
 import path from "node:path";
-
+import { SCREENSHOT_DIR } from "./constants";
 
 export class AsyncQueue<T> {
   constructor(private queue: (() => Promise<any>)[] = []) {}
@@ -10,7 +9,7 @@ export class AsyncQueue<T> {
     this.queue.push(fn);
   }
 
-  async run(config: { concurrency: number}): Promise<T[]> {
+  async run(config: { concurrency: number }): Promise<T[]> {
     const { concurrency } = config;
     const queue = [...this.queue];
     let runResults: T[] = [];
@@ -18,20 +17,36 @@ export class AsyncQueue<T> {
     while (queue.length > 0) {
       const batch = queue.splice(0, concurrency);
       if (batch.length) {
-        const results = await Promise.all(
-          batch.map((fn) => fn())
-        );
-        runResults  = [...runResults, ...results];
+        const results = await Promise.all(batch.map((fn) => fn()));
+        runResults = [...runResults, ...results];
       }
 
-      console.log(queue.length)
+      console.log(queue.length);
     }
 
     return runResults;
   }
 }
 
-export async function readAsReadable({ directoryPath, filePath }: { directoryPath?: string, filePath?: string }) {
+export async function initializeDirectories() {
+  try {
+    // Ensure screenshots directory exists
+    if (!fs.existsSync(SCREENSHOT_DIR)) {
+      fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
+    }
+  } catch (error) {
+    console.error("Error initializing directories:", error);
+    throw error;
+  }
+}
+
+export async function readAsReadable({
+  directoryPath,
+  filePath,
+}: {
+  directoryPath?: string;
+  filePath?: string;
+}) {
   try {
     if (!filePath && !directoryPath)
       throw new Error("No file or directory path provided.");
@@ -39,12 +54,12 @@ export async function readAsReadable({ directoryPath, filePath }: { directoryPat
     if (directoryPath) {
       // Read the directory and get the list of files
       const files = await fs.promises.readdir(directoryPath);
-  
+
       if (files.length === 0)
-        throw new Error('No files found in the directory.');
- 
+        throw new Error("No files found in the directory.");
+
       // Get the first file in the directory
-      const firstFile = files.filter(file => file.endsWith('.mp4'))[0];
+      const firstFile = files.filter((file) => file.endsWith(".mp4"))[0];
       filePath = path.join(directoryPath, firstFile);
     }
 
@@ -57,7 +72,7 @@ export async function readAsReadable({ directoryPath, filePath }: { directoryPat
       src: filePath as string,
     };
   } catch (error) {
-    console.error('Error reading the first file:', error);
+    console.error("Error reading the first file:", error);
     throw error;
   }
 }

@@ -5,42 +5,13 @@ import { exec, spawn } from "node:child_process";
 
 import { readAsReadable } from "./utils";
 import { AUDIO_DIR, CWD } from "./constants";
-import { elevenlabs, openai, zyphra } from "./ai";
+import { elevenlabs, openai, zyphra, processTextWithAI } from "./ai";
 
 import type { RedditStory, StreamSrc } from "./types";
 
+// Use the new Vercel AI SDK function for text processing
 async function processText(title: string, story: string) {
-  const response = await openai.chat.completions.create({
-    model: process.env.OPENROUTER_MODEL!,
-    messages: [
-      {
-        role: "system",
-        content: `
-You are provided with a story sourced from Reddit. Your task is to transform this narrative into a version that is fully appropriate for posting on platforms such as YouTube or TikTok. This involves a careful revision to remove, replace, or reframe any explicit, offensive, or sensitive content while maintaining the original narrative's story. The revised story should be engaging, clear, and suitable for a diverse, general audience and almost as long as the original story.
-
-Please follow these guidelines in your transformation:
-1. Make the text AI voice friendly and suitable for an AI voice to read.
-2. Remove or alter any content that may be deemed inappropriate, explicit, or offensive.
-3. Adjust the tone to be engaging and lively, ensuring the language is family-friendly and accessible.
-4. Maintain the coherence and flow of the original story while enhancing its appeal for a social media audience.
-5. Ensure you respond with text only, without using things like emojis
-6. Make the story moe suitable for text to speech generation
-7. Replace the words AITA and AITAH with Am I the asshole?
-
-Ensure you respond with only the transformed story and nothing else
-`,
-      },
-      { role: "user", content: title + "\n\n" + story },
-    ],
-  });
-
-  // console.log(response, response.choices)
-
-  if (!response.choices?.length) {
-    throw new Error("No response from OpenAI");
-  }
-
-  return response.choices[0].message.content!;
+  return await processTextWithAI(title, story);
 }
 
 async function generateAudioElevenLabs(story: RedditStory) {
@@ -76,7 +47,7 @@ async function generateAudioZyphra(story: RedditStory) {
     speaking_rate: 15,
     speaker_audio: await fs.promises.readFile(
       path.join(AUDIO_DIR, "eleven.wav"),
-      "base64"
+      "base64",
     ),
     mime_type: "audio/mp3",
   });
@@ -96,6 +67,16 @@ function generateAudioLocal(story: RedditStory, useDia?: boolean) {
       "audio",
       "-o",
       outputPath,
+      "--voice",
+      "af_sarah",
+      "--speed",
+      "0.9",
+      "--pitch",
+      "1.0",
+      "--emotion",
+      "neutral",
+      "--pause-factor",
+      "1.2",
     ];
 
     if (useDia) {
@@ -106,8 +87,7 @@ function generateAudioLocal(story: RedditStory, useDia?: boolean) {
     const proc = spawn("python3", scriptArgs, {
       cwd: process.cwd(),
       stdio: "pipe",
-      }
-    );
+    });
 
     proc.stdout.on("data", (data) => {
       console.log(data.toString());
@@ -150,7 +130,7 @@ export async function generateAudio(story: RedditStory, useDia?: boolean) {
     // return generateAudioLocal(story, useDia);
     // Or, to maintain current behavior of throwing error for unconfigured/unknown:
     throw new Error(
-      `Unsupported or unspecified audio generator: ${process.env.AUDIO_GENERATOR}`
+      `Unsupported or unspecified audio generator: ${process.env.AUDIO_GENERATOR}`,
     );
   }
 }

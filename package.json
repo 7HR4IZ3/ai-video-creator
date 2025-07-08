@@ -2,19 +2,35 @@
   "name": "video-creator",
   "module": "index.ts",
   "type": "module",
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "generate": "bun run src/index.ts generate",
+    "upload": "bun run src/index.ts upload",
+    "list": "bun run src/index.ts list",
+    "configure": "bun run src/index.ts configure",
+    "oauth-server": "cd server && npm run dev",
+    "setup": "./setup-oauth.sh",
+    "test-oauth": "node test-oauth.js",
+    "web": "./start-web.sh",
+    "client": "cd client && bun run dev"
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/fluent-ffmpeg": "^2.1.26",
-    "@types/node": "^22.10.2"
+    "@types/node": "^22.10.2",
+    "@types/ws": "^8.18.1"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^1.3.22",
     "@google-cloud/local-auth": "^3.0.1",
     "@googleapis/youtube": "^24.0.0",
+    "@openrouter/ai-sdk-provider": "^0.7.2",
     "@types/ioredis": "^5.0.0",
     "@zyphra/client": "^1.0.1",
+    "ai": "^4.3.16",
     "axios": "^1.8.4",
     "commander": "^13.1.0",
     "dedent": "^1.5.3",
@@ -29,6 +45,7 @@
     "playwright": "^1.52.0",
     "pocketbase": "^0.25.2",
     "snoowrap": "^1.23.0",
+    "ws": "^8.18.3",
     "ytdl-core": "^4.11.5"
   }
 }

@@ -1,0 +1,249 @@
+@import "tailwindcss";
+@config "../tailwind.config.js";
+
+:root {
+	--background: 0 0% 100%;
+	--foreground: 222.2 84% 4.9%;
+	--card: 0 0% 100%;
+	--card-foreground: 222.2 84% 4.9%;
+	--popover: 0 0% 100%;
+	--popover-foreground: 222.2 84% 4.9%;
+	--primary: 222.2 47.4% 11.2%;
+	--primary-foreground: 210 40% 98%;
+	--secondary: 210 40% 96%;
+	--secondary-foreground: 222.2 47.4% 11.2%;
+	--muted: 210 40% 96%;
+	--muted-foreground: 215.4 16.3% 46.9%;
+	--accent: 210 40% 96%;
+	--accent-foreground: 222.2 47.4% 11.2%;
+	--destructive: 0 84.2% 60.2%;
+	--destructive-foreground: 210 40% 98%;
+	--border: 214.3 31.8% 91.4%;
+	--input: 214.3 31.8% 91.4%;
+	--ring: 222.2 84% 4.9%;
+	--chart-1: 12 76% 61%;
+	--chart-2: 173 58% 39%;
+	--chart-3: 197 37% 24%;
+	--chart-4: 43 74% 66%;
+	--chart-5: 27 87% 67%;
+	--radius: 0.5rem;
+}
+
+.dark {
+	--background: 222.2 84% 4.9%;
+	--foreground: 210 40% 98%;
+	--card: 222.2 84% 4.9%;
+	--card-foreground: 210 40% 98%;
+	--popover: 222.2 84% 4.9%;
+	--popover-foreground: 210 40% 98%;
+	--primary: 210 40% 98%;
+	--primary-foreground: 222.2 47.4% 11.2%;
+	--secondary: 217.2 32.6% 17.5%;
+	--secondary-foreground: 210 40% 98%;
+	--muted: 217.2 32.6% 17.5%;
+	--muted-foreground: 215 20.2% 65.1%;
+	--accent: 217.2 32.6% 17.5%;
+	--accent-foreground: 210 40% 98%;
+	--destructive: 0 62.8% 30.6%;
+	--destructive-foreground: 210 40% 98%;
+	--border: 217.2 32.6% 17.5%;
+	--input: 217.2 32.6% 17.5%;
+	--ring: 212.7 26.8% 83.9%;
+	--chart-1: 220 70% 50%;
+	--chart-2: 160 60% 45%;
+	--chart-3: 30 80% 55%;
+	--chart-4: 280 65% 60%;
+	--chart-5: 340 75% 55%;
+}
+
+@layer base {
+	* {
+		@apply border-border;
+	}
+	body {
+		@apply bg-background text-foreground;
+	}
+}
+
+/* Custom utility classes */
+.line-clamp-3 {
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+}
+
+/* Video Creator specific styles */
+.video-creator-gradient {
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.video-creator-card {
+	@apply rounded-lg border border-gray-200 bg-white shadow-sm transition-shadow duration-200 hover:shadow-md;
+}
+
+.video-creator-card.dark {
+	@apply border-gray-700 bg-gray-800;
+}
+
+/* Loading animations */
+.animate-pulse {
+	animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.5;
+	}
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+	width: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: hsl(var(--muted));
+}
+
+::-webkit-scrollbar-thumb {
+	background: hsl(var(--muted-foreground));
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: hsl(var(--foreground));
+}
+
+/* Form improvements */
+.form-input {
+	@apply w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none;
+}
+
+.form-input.dark {
+	@apply border-gray-600 bg-gray-800 text-white;
+}
+
+/* Button improvements */
+.btn-primary {
+	@apply rounded-md bg-blue-600 px-4 py-2 font-medium text-white transition-colors duration-200 hover:bg-blue-700;
+}
+
+.btn-secondary {
+	@apply rounded-md bg-gray-200 px-4 py-2 font-medium text-gray-900 transition-colors duration-200 hover:bg-gray-300;
+}
+
+.btn-secondary.dark {
+	@apply bg-gray-700 text-gray-100 hover:bg-gray-600;
+}
+
+/* Status badges */
+.status-completed {
+	@apply rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800;
+}
+
+.status-pending {
+	@apply rounded-full bg-yellow-100 px-2 py-1 text-xs font-medium text-yellow-800;
+}
+
+.status-failed {
+	@apply rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-800;
+}
+
+.status-completed.dark {
+	@apply bg-green-900 text-green-300;
+}
+
+.status-pending.dark {
+	@apply bg-yellow-900 text-yellow-300;
+}
+
+.status-failed.dark {
+	@apply bg-red-900 text-red-300;
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+	@apply fixed inset-0 z-50 flex items-center justify-center bg-black p-4;
+}
+
+/* Progress bar */
+.progress-bar {
+	@apply h-2.5 w-full rounded-full bg-gray-200;
+}
+
+.progress-bar-fill {
+	@apply h-2.5 rounded-full bg-blue-600 transition-all duration-300;
+}
+
+/* Responsive typography */
+.text-responsive {
+	@apply text-sm md:text-base lg:text-lg;
+}
+
+.title-responsive {
+	@apply text-2xl md:text-3xl lg:text-4xl;
+}
+
+/* Video player styles */
+.video-player {
+	@apply aspect-video w-full overflow-hidden rounded-lg bg-gray-900;
+}
+
+.video-controls {
+	@apply absolute right-0 bottom-0 left-0 flex items-center justify-between bg-gradient-to-t from-black to-transparent p-4;
+}
+
+/* Platform icons */
+.platform-icon {
+	@apply mr-2 inline-block h-6 w-6;
+}
+
+/* Notification styles */
+.notification {
+	@apply fixed top-4 right-4 z-50 w-full max-w-sm rounded-lg bg-white p-4 shadow-lg;
+}
+
+.notification.success {
+	@apply border-l-4 border-green-500;
+}
+
+.notification.error {
+	@apply border-l-4 border-red-500;
+}
+
+.notification.warning {
+	@apply border-l-4 border-yellow-500;
+}
+
+.notification.info {
+	@apply border-l-4 border-blue-500;
+}
+
+/* Loading spinner */
+.spinner {
+	@apply inline-block h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600;
+}
+
+/* Transition utilities */
+.transition-colors {
+	transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+	transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+	transition-duration: 150ms;
+}
+
+.transition-shadow {
+	transition-property: box-shadow;
+	transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+	transition-duration: 150ms;
+}
+
+.transition-transform {
+	transition-property: transform;
+	transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+	transition-duration: 150ms;
+}

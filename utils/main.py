@@ -3,9 +3,6 @@ import moviepy
 import datetime
 import soundfile
 
-# Removed Dia import from here, will be imported conditionally
-
-from sys import argv
 from pathlib import Path
 from random import randint
 from kokoro import KPipeline
@@ -60,13 +57,19 @@ def cli():
 @cli.command()
 @click.argument("text")
 @click.option(
-    "-s", "--speed", default=1, type=int, help="Speech speed.", show_default=True
+    "-s", "--speed", default=0.9, type=float, help="Speech speed (0.5-2.0).", show_default=True
 )
 @click.option(
-    "-v", "--voice", default="am_fenrir", help="AI voice to use.", show_default=True
+    "-v", "--voice", default="af_sarah", help="AI voice to use.", show_default=True
 )
 @click.option(
-    "--pitch", default=1.0, type=float, help="Speech pitch.", show_default=True
+    "--pitch", default=1.0, type=float, help="Speech pitch (0.5-2.0).", show_default=True
+)
+@click.option(
+    "--emotion", default="neutral", help="Voice emotion (neutral, happy, sad, angry).", show_default=True
+)
+@click.option(
+    "--pause-factor", default=1.2, type=float, help="Pause length multiplier.", show_default=True
 )
 @click.option(
     "-o",
@@ -84,8 +87,10 @@ def audio(
     text: str,
     output: Path,
     voice: str,
-    speed: int,
+    speed: float,
     pitch: float,
+    emotion: str,
+    # pause_factor: float,
     verbose: bool,
     use_dia: bool,
 ):
@@ -96,7 +101,7 @@ def audio(
             click.echo("Attempting to use Dia model.")
         else:
             click.echo(
-                f"Using Kokoro TTS with voice: {voice}, speed: {speed}, pitch: {pitch}"
+                f"Using Kokoro TTS with voice: {voice}, speed: {speed}, pitch: {pitch}, emotion: {emotion}"
             )
         click.echo(f"Output file: {output}")
 
@@ -130,12 +135,29 @@ def audio(
                 click.echo(f"Error during Dia audio generation: {e}", err=True)
                 return
         else:
-            pipeline = KPipeline(lang_code="a")
+            # Enhanced Kokoro TTS configuration for better audio quality
+            pipeline = KPipeline(
+                lang_code="a",
+                device="cpu",  # Use CPU for consistency
+                # half_precision=False,  # Full precision for better quality
+            )
+
+            # Pre-process text for better TTS output
+            processed_text = text.replace("...", ". ")  # Convert ellipsis to pauses
+            processed_text = processed_text.replace("—", ", ")  # Convert em-dashes to commas
+            processed_text = processed_text.replace("–", ", ")  # Convert en-dashes to commas
+
             with soundfile.SoundFile(
                 output.as_posix(), "w", 24000, 1
             ) as out:  # Kokoro default SR
                 for _, _, audio_chunk in pipeline(
-                    text, voice=voice, speed=speed, split_pattern=r"\n"
+                    processed_text,
+                    voice=voice,
+                    speed=speed,
+                    # pitch=pitch,
+                    # emotion=emotion,
+                    split_pattern=r"[.!?]\s+",  # Split on sentence boundaries for better pacing
+                    # pause_factor=pause_factor,  # Add natural pauses
                 ):
                     out.write(audio_chunk)
             if verbose:
@@ -167,6 +189,12 @@ def audio(
     "--subtitle",
     required=True,
     help="Subtitle file path (.srt or similar).",
+    type=Path,
+    show_default=True,
+)
+@click.option(
+    "--screenshot",
+    help="Screenshot overlay file path (.png).",
     type=Path,
     show_default=True,
 )
@@ -272,6 +300,7 @@ def editor(
     audio: Path,
     video: Path,
     subtitle: Path,  # Still required by signature, but generated internally. Consider removing if path isn't used.
+    screenshot: Path | None,
     output: Path,
     format: str,
     font: Path,
@@ -297,6 +326,7 @@ def editor(
         click.echo(
             f"  Subtitle path (for potential output, content generated): {subtitle}"
         )
+        click.echo(f"  Screenshot overlay: {screenshot if screenshot else 'None'}")
         click.echo(f"  Output path: {output}")
         click.echo(f"  Format: {format}")
         click.echo(f"  Font: {font}")
@@ -333,6 +363,7 @@ def editor(
         if video_clip.duration < audio_clip.duration:
             click.echo("Error: Video duration is less than audio duration.", err=True)
             return
+        # trunk-ignore(bandit/B311)
         random_start = randint(0, int(video_clip.duration) - int(audio_clip.duration))
         video_clip = (
             video_clip.subclipped(random_start)
@@ -355,7 +386,37 @@ def editor(
             click.echo(
                 f"Transcription complete. Language: {info.language} (Prob: {info.language_probability:.2f}), Duration: {info.duration:.2f}s"
             )
-            click.echo(f"Generating subtitle TextClips...")
+            click.echo("Generating subtitle TextClips...")
+
+        if format == "tiktok":
+            if verbose:
+                click.echo("Formatting for TikTok (9:16 aspect ratio)...")
+            crop = get_crop_coordinates(video_clip.w, video_clip.h)
+            video_clip = video_clip.cropped(
+                x1=crop["x1"],
+                y1=crop["y1"],
+                x2=crop["x2"],
+                y2=crop["y2"],
+            ).resized(height=1280)
+            video_clip = video_clip.cropped(x_center=video_clip.w / 2, width=720)
+
+        # Load screenshot overlay if provided
+        screenshot_clip = None
+        if screenshot and screenshot.exists():
+            if verbose:
+                click.echo(f"Loading screenshot overlay: {screenshot}")
+            screenshot_clip = moviepy.ImageClip(screenshot.as_posix())
+
+            # Calculate screenshot dimensions for center positioning
+            # Make screenshot 60% of video width, maintain aspect ratio
+            screenshot_width = int(video_clip.w * 0.8)
+            screenshot_clip = screenshot_clip.resized(width=screenshot_width)
+
+            # Position screenshot in the center of the video
+            screenshot_clip = screenshot_clip.with_position("center").with_duration(video_clip.duration)
+
+            if verbose:
+                click.echo(f"Screenshot dimensions: {screenshot_clip.w}x{screenshot_clip.h}")
 
         subtitle_texts = []
         # Optionally write generated subtitles to the specified subtitle file path
@@ -385,9 +446,17 @@ def editor(
                     stroke_color=stroke_color,  # Use new option
                     stroke_width=stroke_width,  # Use new option
                 )
+
+                # Adjust subtitle position based on screenshot presence
+                if screenshot_clip and subtitle_position == "center":
+                    # Position subtitles below the screenshot
+                    subtitle_y = (video_clip.h / 2) + (screenshot_clip.h / 2) + 20
+                    txt_clip = txt_clip.with_position(("center", subtitle_y))
+                else:
+                    txt_clip = txt_clip.with_position(subtitle_position)  # Use new option
+
                 txt_clip = (
-                    txt_clip.with_position(subtitle_position)  # Use new option
-                    .with_start(word.start)
+                    txt_clip.with_start(word.start)
                     .with_end(word.end)
                 )
                 subtitle_texts.append(txt_clip)
@@ -397,19 +466,14 @@ def editor(
 
         if verbose:
             click.echo("Compositing video and subtitles...")
-        final_clip = moviepy.CompositeVideoClip([video_clip, *subtitle_texts])
 
-        if format == "tiktok":
-            if verbose:
-                click.echo("Formatting for TikTok (9:16 aspect ratio)...")
-            crop = get_crop_coordinates(final_clip.w, final_clip.h)
-            final_clip = final_clip.cropped(
-                x1=crop["x1"],
-                y1=crop["y1"],
-                x2=crop["x2"],
-                y2=crop["y2"],
-            ).resized(height=1280)
-            final_clip = final_clip.cropped(x_center=final_clip.w / 2, width=720)
+        # Create composite with screenshot overlay
+        clips = [video_clip]
+        if screenshot_clip:
+            clips.append(screenshot_clip)
+        clips.extend(subtitle_texts)
+
+        final_clip = moviepy.CompositeVideoClip(clips)
 
         if verbose:
             click.echo(f"Writing final video to {output}...")
@@ -423,6 +487,19 @@ def editor(
         }
         if video_bitrate:
             write_params["bitrate"] = video_bitrate
+
+        # Generate thumbnail from screenshot if available
+        if screenshot_clip and screenshot.exists():
+            thumbnail_path = output.with_suffix('.png')
+            if verbose:
+                click.echo(f"Generating thumbnail: {thumbnail_path}")
+
+            # Create thumbnail clip (first frame with screenshot overlay)
+            thumbnail_frame = final_clip.subclipped(0, 0.1)
+            thumbnail_frame.save_frame(thumbnail_path.as_posix(), t=0)
+
+            if verbose:
+                click.echo(f"Thumbnail saved: {thumbnail_path}")
 
         final_clip.write_videofile(output.as_posix(), **write_params)
 

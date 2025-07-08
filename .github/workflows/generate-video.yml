@@ -65,7 +65,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: generated-videos
-          path: media/outputs/**/*.mp4
+          path: media/outputs/*.mp4
 
       - name: Run video generation script
         run: |

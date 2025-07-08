@@ -1,7 +1,8 @@
 import axios from "axios";
 import FormData from "form-data";
-import fs from "fs";
+import fs, { readFileSync } from "fs";
 import type { StreamSrc } from "../types";
+import { randomUUID } from "crypto";
 
 export async function uploadToFacebook(
   output: StreamSrc,
@@ -12,54 +13,87 @@ export async function uploadToFacebook(
 ) {
   try {
     if (!process.env.FACEBOOK_ACCESS_TOKEN) {
-      throw new Error("Facebook access token not found in environment variables");
+      throw new Error(
+        "Facebook access token not found in environment variables"
+      );
     }
 
+    const id = randomUUID();
+
     const accessToken = process.env.FACEBOOK_ACCESS_TOKEN;
+
+    const appId = options.appId || process.env.FACEBOOK_APP_ID;
     const pageId = options.pageId || process.env.FACEBOOK_PAGE_ID;
 
     // Step 1: Initialize the video upload
-    const initResponse = await axios.post(
-      `https://graph.facebook.com/v18.0/${pageId}/videos`,
+    const initResponse = await fetch(
+      `https://graph.facebook.com/v22.0/${appId}/uploads`,
       {
-        access_token: accessToken,
-        upload_phase: "start",
-        file_size: fs.statSync(output.src).size,
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          access_token: accessToken,
+          file_name: id,
+          file_type: "video/mp4",
+          file_length: fs.statSync(output.src).size,
+        }),
       }
     );
 
-    const uploadSessionId = initResponse.data.upload_session_id;
+    if (!initResponse.ok) {
+      throw new Error(
+        `Failed to initialize video upload: ${initResponse.statusText}`
+      );
+    }
 
-    // Step 2: Upload the video chunks
-    const fileStream = output.stream;
-    const formData = new FormData();
-    formData.append("access_token", accessToken);
-    formData.append("upload_phase", "transfer");
-    formData.append("upload_session_id", uploadSessionId);
-    formData.append("video_file_chunk", fileStream);
+    const uploadSessionId = await initResponse
+      .json()
+      .then((data: any) => data.id);
 
-    await axios.post(
-      `https://graph.facebook.com/v18.0/${pageId}/videos`,
-      formData,
+    console.log(uploadSessionId);
+
+    const uploadResponse = await fetch(
+      `https://graph.facebook.com/v22.0/${uploadSessionId}`,
       {
-        headers: formData.getHeaders(),
+        method: "POST",
+        headers: {
+          "Content-Type": "application/octet-stream",
+          Authorization: `OAuth ${accessToken}`,
+          "file-offset": "0",
+        },
+        body: readFileSync(output.src),
       }
     );
+
+    if (!uploadResponse.ok) {
+      throw new Error(`Failed to upload video: ${uploadResponse.statusText}`);
+    }
+
+    const uploadFileHandle = await uploadResponse
+      .json()
+      .then((data: any) => data.h);
 
     // Step 3: Finalize the upload
-    const finalizeResponse = await axios.post(
-      `https://graph.facebook.com/v18.0/${pageId}/videos`,
+    const finalizeResponse = await fetch(
+      `https://graph-video.facebook.com/v22.0/${pageId}/videos`,
       {
-        access_token: accessToken,
-        upload_phase: "finish",
-        upload_session_id: uploadSessionId,
-        title: title,
-        description: description,
-        privacy: { value: privacy },
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `OAuth ${accessToken}`,
+        },
+        body: JSON.stringify({
+          title,
+          description,
+          access_token: accessToken,
+          fbuploader_video_file_chunk: uploadFileHandle,
+        }),
       }
     );
 
-    const videoId = finalizeResponse.data.id;
+    const videoId = await finalizeResponse.json().then((data: any) => data.id);
     return {
       success: true,
       videoUrl: `https://facebook.com/${videoId}`,

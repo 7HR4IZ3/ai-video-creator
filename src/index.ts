@@ -19,7 +19,7 @@ import {
 } from "./uploaders";
 
 import type { RedditStory, StreamSrc } from "./types";
-import { AsyncQueue, readAsReadable } from "./utils";
+import { AsyncQueue, readAsReadable, initializeDirectories } from "./utils";
 
 const program = new Command();
 
@@ -43,11 +43,7 @@ const SUBREDDITS = {
   til: ["todayilearned"],
 };
 
-async function generate(
-  story: RedditStory,
-  skipVideo = false,
-  useDia = false
-) {
+async function generate(story: RedditStory, skipVideo = false, useDia = false) {
   let audio;
 
   console.log(`[GENERATING]: Story: ${story.title} (${story.name})`);
@@ -102,7 +98,7 @@ async function uploadToDestination(
   output: StreamSrc,
   story: RedditStory,
   privacy: string = "private",
-  options: Record<string, any> = {}
+  options: Record<string, any> = {},
 ) {
   console.log(`[🚀]: Uploading video to ${platform}`);
 
@@ -117,7 +113,7 @@ async function uploadToDestination(
     story.title,
     description,
     privacy,
-    options
+    options,
   );
 
   if (result.success) {
@@ -133,6 +129,8 @@ async function uploadToDestination(
 program
   .command("generate")
   .option("-s, --story <string>", "story")
+  .option("--story-id <string>", "specific story ID to generate")
+  .option("--subreddit <string>", "subreddit to fetch stories from")
   .option("-c, --concurrent <number>", "concurrent")
   .option("-r, --reddit <string>", "reddit")
   .option("--mode <string>", "mode")
@@ -141,19 +139,21 @@ program
   .option("--skip-video", "skip video")
   .option("--use-dia", "use Dia model for audio generation") // Added --use-dia option
   .option(
-    "--platform <string>",
-    "upload platform (youtube, facebook, tiktok, filesystem)",
-    "youtube"
+    "--platforms <string>",
+    "upload platforms (youtube, facebook, tiktok, filesystem)",
+    "youtube",
   )
   .option(
     "--privacy <string>",
     "privacy setting (private, public, unlisted)",
-    "private"
+    "private",
   )
   .description("Generate a video")
   .action(
     async (options: {
       story?: string;
+      storyId?: string;
+      subreddit?: string;
       concurrent?: number;
       limit?: number;
       mode?: "shorts" | "longform";
@@ -161,11 +161,14 @@ program
       skipUpload?: boolean;
       skipVideo?: boolean;
       useDia?: boolean; // Added useDia to options type
-      platform?: string;
+      platforms?: string;
       privacy?: string;
     }) => {
-      // Validate platform
-      const platform = options.platform as UploadPlatform;
+      // Initialize directories
+      await initializeDirectories();
+
+      // Validate platforms
+      const platforms = options.platforms;
       const validPlatforms: UploadPlatform[] = [
         "youtube",
         "facebook",
@@ -173,66 +176,98 @@ program
         "filesystem",
       ];
 
-      if (!validPlatforms.includes(platform)) {
-        console.error(
-          `[❌]: Invalid platform "${platform}". Valid options are: ${validPlatforms.join(
-            ", "
-          )}`
-        );
-        return process.exit(0);
+      for (const platform of platforms?.split(",") || []) {
+        if (!validPlatforms.includes(platform.trim() as UploadPlatform)) {
+          console.error(
+            `[❌]: Invalid platform "${platform}". Valid options are: ${validPlatforms.join(
+              ", ",
+            )}`,
+          );
+          return process.exit(0);
+        }
       }
 
       if (options.story) {
         const storyPath = path.join(
           CWD,
           "media/scripts",
-          `${options.story}.json`
+          `${options.story}.json`,
         );
         const story: RedditStory = await readFile(storyPath, "utf-8").then(
-          JSON.parse
+          JSON.parse,
         );
 
-        const output = await generate(
-          story,
-          options.skipVideo,
-          options.useDia
-        ); // Pass useDia to generate function
+        const output = await generate(story, options.skipVideo, options.useDia); // Pass useDia to generate function
 
-        if (!options.skipUpload) {
-          await uploadToDestination(
-            platform,
-            output.final,
-            story,
-            options.privacy
-          );
+        if (!options.skipUpload && platforms) {
+          for (const platform of platforms.split(",")) {
+            await uploadToDestination(
+              platform.trim() as UploadPlatform,
+              output.final,
+              story,
+              options.privacy,
+            );
+          }
         } else {
           console.log("[🚀]: Upload skipped.");
         }
       } else {
         const queue = new AsyncQueue();
-        const stories = await grabStories(SUBREDDITS.aita);
-        for (const story of stories.slice(0, options.limit ?? 6)) {
+
+        // Determine which subreddit to use
+        let subredditKey = "aita";
+        if (options.subreddit) {
+          // Map subreddit names to SUBREDDITS keys
+          const subredditMap: { [key: string]: keyof typeof SUBREDDITS } = {
+            stories: "stories",
+            AITAH: "aita",
+            todayilearned: "til",
+          };
+          subredditKey = subredditMap[options.subreddit] || "aita";
+        }
+
+        const stories = await grabStories(
+          SUBREDDITS[subredditKey as keyof typeof SUBREDDITS],
+        );
+
+        // If a specific story ID is provided, find that story
+        let storiesToProcess = stories;
+        if (options.storyId) {
+          const specificStory = stories.find(
+            (s) => s.id === options.storyId || s.name === options.storyId,
+          );
+          if (specificStory) {
+            storiesToProcess = [specificStory];
+          } else {
+            console.log(`[❌]: Story with ID "${options.storyId}" not found`);
+            return process.exit(1);
+          }
+        }
+
+        for (const story of storiesToProcess.slice(0, options.limit ?? 6)) {
           queue.add(async () => {
             const output = await generate(
               story,
               options.skipVideo,
-              options.useDia
+              options.useDia,
             ); // Pass useDia to generate function
 
-            if (!options.skipUpload) {
-              await uploadToDestination(
-                platform,
-                output.final,
-                story,
-                options.privacy
-              );
+            if (!options.skipUpload && platforms) {
+              for (const platform of platforms.split(",")) {
+                await uploadToDestination(
+                  platform.trim() as UploadPlatform,
+                  output.final,
+                  story,
+                  options.privacy,
+                );
+              }
             }
             return output;
           });
         }
         await queue.run({ concurrency: options.concurrent ?? 2 });
       }
-    }
+    },
   );
 
 // Add a new command for multi-platform uploads
@@ -240,22 +275,26 @@ program
   .command("upload")
   .option(
     "-s, --story <string>",
-    "story name to upload, or 'all' to upload all generated videos"
+    "story name to upload, or 'all' to upload all generated videos",
   )
+  .option("--story-id <string>", "specific story ID to upload")
   .option(
-    "-p, --platform <string>",
+    "-p, --platforms <string>",
     "comma-separated list of platforms to upload to",
-    "youtube"
+    "youtube",
   )
+  .option("--platform <string>", "single platform to upload to")
   .option(
     "--privacy <string>",
     "privacy setting (private, public, unlisted)",
-    "private"
+    "private",
   )
   .description("Upload an existing video to multiple platforms")
   .action(
     async (options: {
       story?: string;
+      storyId?: string;
+      platforms?: string;
       platform?: string;
       privacy?: string;
       concurrent?: number; // Added for batch processing
@@ -270,13 +309,13 @@ program
 
       if (!options.story) {
         console.error(
-          "[❌]: Story name or 'all' is required for the --story option"
+          "[❌]: Story name or 'all' is required for the --story option",
         );
         return process.exit(0);
       }
 
       // Common platform validation
-      const platformsToUpload = options.platform?.split(",") || ["youtube"];
+      const platformsToUpload = options.platforms?.split(",") || ["youtube"];
       const validPlatforms: UploadPlatform[] = [
         "youtube",
         "facebook",
@@ -284,11 +323,11 @@ program
         "filesystem",
       ];
       const invalidPlatforms = platformsToUpload.filter(
-        (p) => !validPlatforms.includes(p as UploadPlatform)
+        (p) => !validPlatforms.includes(p as UploadPlatform),
       );
       if (invalidPlatforms.length > 0) {
         console.error(
-          `[❌]: Invalid platforms: ${invalidPlatforms.join(", ")}`
+          `[❌]: Invalid platforms: ${invalidPlatforms.join(", ")}`,
         );
         console.error(`[ℹ️]: Valid options are: ${validPlatforms.join(", ")}`);
         return process.exit(0);
@@ -304,7 +343,7 @@ program
         try {
           const outputFiles = await readdir(outputsDir);
           const videoFiles = outputFiles.filter((file) =>
-            file.endsWith(".mp4")
+            file.endsWith(".mp4"),
           );
 
           if (videoFiles.length === 0) {
@@ -321,7 +360,7 @@ program
 
             if (!(await exists(currentStoryPath))) {
               console.warn(
-                `[⚠️]: Script file not found for video "${videoFile}" (expected at ${currentStoryPath}). Skipping.`
+                `[⚠️]: Script file not found for video "${videoFile}" (expected at ${currentStoryPath}). Skipping.`,
               );
               continue;
             }
@@ -331,7 +370,7 @@ program
               try {
                 const storyData: RedditStory = await readFile(
                   currentStoryPath,
-                  "utf-8"
+                  "utf-8",
                 ).then(JSON.parse);
                 console.log(`[⬆️]: Queueing upload for "${storyName}"...`);
 
@@ -345,7 +384,7 @@ program
                     platform as UploadPlatform,
                     await readAsReadable({ filePath: currentVideoPath }),
                     storyData,
-                    options.privacy
+                    options.privacy,
                   );
                   overallResults.platformResults.push({ platform, result });
                 }
@@ -354,7 +393,7 @@ program
                 console.error(
                   `[❌]: Error processing story "${storyName}": ${
                     (err as Error).message
-                  }`
+                  }`,
                 );
                 return {
                   storyName,
@@ -369,34 +408,42 @@ program
 
           if (videosFound === 0) {
             console.log(
-              "[ℹ️]: No videos found with corresponding script files."
+              "[ℹ️]: No videos found with corresponding script files.",
             );
             return process.exit(0);
           }
 
           // Explicitly type the result of uploadQueue.run
-          const allUploadResults = (await uploadQueue.run({
+          const allUploadResults = await uploadQueue.run({
             concurrency: options.concurrent ?? 2,
-          })); // Assuming run might return undefined for failed/empty tasks
+          }); // Assuming run might return undefined for failed/empty tasks
 
           console.log("\n[📊]: Overall Upload Summary");
-          allUploadResults.forEach((uploadResult: StoryUploadSummary | undefined) => {
-            if (uploadResult) {
-              console.log(`\n--- Story: ${uploadResult.storyName} ---`);
-              uploadResult.platformResults.forEach(
-                ({ platform, result }: { platform: string; result: UploadResult }) => {
-                  if (result.success) {
-                    console.log(`  [✅]: ${platform}: ${result.videoUrl}`);
-                  } else {
-                    console.log(`  [❌]: ${platform}: ${result.error}`);
-                  }
-                }
-              );
-            }
-          });
+          allUploadResults.forEach(
+            (uploadResult: StoryUploadSummary | undefined) => {
+              if (uploadResult) {
+                console.log(`\n--- Story: ${uploadResult.storyName} ---`);
+                uploadResult.platformResults.forEach(
+                  ({
+                    platform,
+                    result,
+                  }: {
+                    platform: string;
+                    result: UploadResult;
+                  }) => {
+                    if (result.success) {
+                      console.log(`  [✅]: ${platform}: ${result.videoUrl}`);
+                    } else {
+                      console.log(`  [❌]: ${platform}: ${result.error}`);
+                    }
+                  },
+                );
+              }
+            },
+          );
         } catch (error) {
           console.error(
-            `[❌]: Error reading output directory: ${(error as Error).message}`
+            `[❌]: Error reading output directory: ${(error as Error).message}`,
           );
         }
       } else {
@@ -404,23 +451,23 @@ program
         const storyPath = path.join(
           CWD,
           "media/scripts",
-          `${options.story}.json`
+          `${options.story}.json`,
         );
         const videoPath = path.join(
           CWD,
           "media/outputs",
-          `${options.story}.mp4`
+          `${options.story}.mp4`,
         );
 
         if (!(await exists(storyPath)) || !(await exists(videoPath))) {
           console.error(
-            `[❌]: Story or video file not found for "${options.story}"`
+            `[❌]: Story or video file not found for "${options.story}"`,
           );
           return process.exit(0);
         }
 
         const story: RedditStory = await readFile(storyPath, "utf-8").then(
-          JSON.parse
+          JSON.parse,
         );
         const results: { platform: string; result: UploadResult }[] = [];
         for (const platform of platformsToUpload) {
@@ -428,7 +475,7 @@ program
             platform as UploadPlatform,
             await readAsReadable({ filePath: videoPath }),
             story,
-            options.privacy
+            options.privacy,
           );
           results.push({ platform, result });
         }
@@ -443,21 +490,22 @@ program
         }
       }
       return process.exit(0);
-    }
+    },
   );
 
 // Add a command to list available stories
 program
   .command("list")
+  .option("--subreddit <string>", "subreddit to list stories from")
   .description("List available stories")
-  .action(async () => {
+  .action(async (options: { subreddit?: string }) => {
     const scriptsDir = path.join(CWD, "media/scripts");
     const outputsDir = path.join(CWD, "media/outputs");
 
     try {
       const files = await readdir(scriptsDir, { withFileTypes: true });
       const storyFiles = files.filter(
-        (file) => file.isFile() && file.name.endsWith(".json")
+        (file) => file.isFile() && file.name.endsWith(".json"),
       );
 
       console.log(`[📚]: Found ${storyFiles.length} stories:`);
@@ -468,14 +516,14 @@ program
         const videoPath = path.join(outputsDir, `${storyName}.mp4`);
 
         const storyData: RedditStory = await readFile(storyPath, "utf-8").then(
-          JSON.parse
+          JSON.parse,
         );
         const hasVideo = await exists(videoPath);
 
         console.log(
           `- ${storyName}: ${storyData.title} ${
             hasVideo ? "[✅ Video]" : "[❌ No Video]"
-          }`
+          }`,
         );
       }
     } catch (error) {
@@ -489,7 +537,7 @@ program
   .option(
     "-p, --platform <string>",
     "platform to configure (youtube, facebook, tiktok)",
-    "youtube"
+    "youtube",
   )
   .description("Configure platform credentials")
   .action(async (options: { platform?: string }) => {
@@ -498,7 +546,7 @@ program
 
     if (!platform) {
       console.error(
-        `[❌]: No platform selected. Options are: ${validPlatforms.join(", ")}`
+        `[❌]: No platform selected. Options are: ${validPlatforms.join(", ")}`,
       );
       return process.exit(0);
     }
@@ -506,8 +554,8 @@ program
     if (!validPlatforms.includes(platform)) {
       console.error(
         `[❌]: Invalid platform "${platform}". Valid options are: ${validPlatforms.join(
-          ", "
-        )}`
+          ", ",
+        )}`,
       );
       return process.exit(0);
     }
@@ -555,7 +603,7 @@ TIKTOK_ACCESS_TOKEN=your_access_token
     }
 
     console.log(
-      "\n[ℹ️]: After updating your .env file, restart the application for changes to take effect."
+      "\n[ℹ️]: After updating your .env file, restart the application for changes to take effect.",
     );
   });
 
