@@ -178,10 +178,11 @@ dist
 # Finder (MacOS) folder config
 .DS_Store
 
+.secrets
 
-**/*.jpg
-**/*.png
-**/*.mp4
-**/*.mp3
-**/*.wav
-**/*.json
+media/**/*.jpg
+media/**/*.png
+media/**/*.mp4
+media/**/*.mp3
+media/**/*.wav
+media/**/*.json
