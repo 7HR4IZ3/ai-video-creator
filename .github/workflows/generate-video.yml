@@ -41,7 +41,7 @@ jobs:
 
       - name: Set up Filesystem
         run: |
-          mkdir -p media media/audios media/videos media/outputs media/scripts .secrets
+          mkdir -p media media/audios media/videos media/outputs media/scripts .secrets server/public
 
       - name: Set up Environment Variables
         run: |
