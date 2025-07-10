@@ -74,9 +74,7 @@ function generateAudioLocal(story: RedditStory, useDia?: boolean) {
       "--pitch",
       "1.0",
       "--emotion",
-      "neutral",
-      "--pause-factor",
-      "1.2",
+      "neutral"
     ];
 
     if (useDia) {

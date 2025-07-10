@@ -68,9 +68,9 @@ def cli():
 @click.option(
     "--emotion", default="neutral", help="Voice emotion (neutral, happy, sad, angry).", show_default=True
 )
-@click.option(
-    "--pause-factor", default=1.2, type=float, help="Pause length multiplier.", show_default=True
-)
+# @click.option(
+#     "--pause-factor", default=1.2, type=float, help="Pause length multiplier.", show_default=True
+# )
 @click.option(
     "-o",
     "--output",
@@ -96,7 +96,7 @@ def audio(
 ):
     """Convert TEXT to audio and save to OUTPUT. Supports Kokoro TTS and Dia."""
     if verbose:
-        click.echo(f"Generating audio for text: '{text[:50]}...'")
+        click.echo(f"Generating audio for text: '{text}...'")
         if use_dia:
             click.echo("Attempting to use Dia model.")
         else:
@@ -413,7 +413,7 @@ def editor(
             screenshot_clip = screenshot_clip.resized(width=screenshot_width)
 
             # Position screenshot in the center of the video
-            screenshot_clip = screenshot_clip.with_position("center").with_duration(video_clip.duration)
+            screenshot_clip = screenshot_clip.with_position("center").with_duration(5)
 
             if verbose:
                 click.echo(f"Screenshot dimensions: {screenshot_clip.w}x{screenshot_clip.h}")

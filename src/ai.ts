@@ -43,17 +43,16 @@ CONTENT REQUIREMENTS:
 - Add natural storytelling elements ("Let me tell you about", "You won't believe what happened next")
 
 VOICE-FRIENDLY FORMATTING:
-- Use periods for natural pauses, not complex punctuation
+- Use periods "." for natural pauses, not complex punctuation
 - Spell out numbers and symbols in words
 - Remove special characters that don't translate to speech
-- Add breathing room with appropriate sentence breaks
 
 Transform this story now:
 
 Title: ${title}
 Story: ${story}
 
-Return only the voice-optimized story text:`,
+Return only the voice-optimized story raw text:`,
     temperature: 0.6,
     maxTokens: 2500,
   });
