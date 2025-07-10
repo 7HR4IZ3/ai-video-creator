@@ -52,7 +52,7 @@ jobs:
         run: |
           cd server
           bun install
-          bunx tsx watch src/server.ts
+          bunx tsx watch src/server.ts&
 
       - name: Setup Playwright
         run: |
