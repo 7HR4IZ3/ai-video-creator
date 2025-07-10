@@ -50,7 +50,9 @@ jobs:
 
       - name: Run video generation server
         run: |
-          bun run oauth-server&
+          cd server
+          bun install
+          bunx tsx watch src/server.ts
 
       - name: Setup Playwright
         run: |

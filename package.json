@@ -46,6 +46,7 @@
     "playwright": "^1.52.0",
     "pocketbase": "^0.25.2",
     "snoowrap": "^1.23.0",
+    "tsx": "^4.20.3",
     "ws": "^8.18.3",
     "ytdl-core": "^4.11.5"
   }
