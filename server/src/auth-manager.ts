@@ -24,7 +24,7 @@ export class AuthManager {
       {
         username: process.env.REDIS_USERNAME,
         password: process.env.REDIS_PASSWORD,
-      }
+      },
     );
   }
 
@@ -82,7 +82,7 @@ export class AuthManager {
   async handleCallback(
     platform: string,
     code: string,
-    state: string
+    state: string,
   ): Promise<OAuthTokens> {
     const provider = this.providers[platform];
     if (!provider) {
@@ -100,7 +100,7 @@ export class AuthManager {
     if (platform === "facebook" && tokenData.access_token) {
       try {
         const pageAccessToken = await this.getFacebookPageAccessToken(
-          tokenData.access_token
+          tokenData.access_token,
         );
         tokenData.page_access_token = pageAccessToken;
       } catch (error) {
@@ -120,7 +120,7 @@ export class AuthManager {
 
   private async exchangeCodeForTokens(
     provider: OAuthProvider,
-    code: string
+    code: string,
   ): Promise<OAuthTokens> {
     const data: Record<string, string> = {
       client_secret: provider.clientSecret,
@@ -149,7 +149,7 @@ export class AuthManager {
             "Content-Type": "application/x-www-form-urlencoded",
             Accept: "application/json",
           },
-        }
+        },
       );
 
       const tokens: OAuthTokens = response.data;
@@ -163,18 +163,18 @@ export class AuthManager {
     } catch (error: any) {
       console.error(
         `Token exchange failed for ${provider.name}:`,
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
       throw new Error(
         `Failed to exchange code for tokens: ${
           error.response?.data?.error_description || error.message
-        }`
+        }`,
       );
     }
   }
 
   private async getFacebookPageAccessToken(
-    userAccessToken: string
+    userAccessToken: string,
   ): Promise<string> {
     try {
       // Get user's pages
@@ -185,7 +185,7 @@ export class AuthManager {
             access_token: userAccessToken,
             fields: "access_token,name,id",
           },
-        }
+        },
       );
 
       const pages = pagesResponse.data.data;
@@ -208,7 +208,7 @@ export class AuthManager {
     } catch (error: any) {
       console.error(
         "Error fetching Facebook page access token:",
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
       throw error;
     }
@@ -216,8 +216,9 @@ export class AuthManager {
 
   private async storeTokens(
     platform: string,
-    tokens: OAuthTokens
+    tokens: OAuthTokens,
   ): Promise<void> {
+    console.log("Storing tokens for platform:", platform, tokens);
     const keyPrefix = `${platform}:`;
 
     if (tokens.access_token) {
@@ -226,7 +227,7 @@ export class AuthManager {
       if (tokens.expiry_date) {
         await this.redis.set(
           `${keyPrefix}expiry_date`,
-          tokens.expiry_date.toString()
+          tokens.expiry_date.toString(),
         );
 
         // Set expiration on the access token key
@@ -253,7 +254,7 @@ export class AuthManager {
     if (tokens.page_access_token) {
       await this.redis.set(
         `${keyPrefix}page_access_token`,
-        tokens.page_access_token
+        tokens.page_access_token,
       );
     }
   }
@@ -277,12 +278,21 @@ export class AuthManager {
       this.redis.get(`${keyPrefix}page_access_token`),
     ]);
 
-    if (!access_token) {
+    console.log({
+      access_token,
+      refresh_token: refresh_token || undefined,
+      expiry_date: expiry_date ? parseInt(expiry_date) : undefined,
+      token_type: token_type || "Bearer",
+      scope: scope || undefined,
+      page_access_token: page_access_token || undefined,
+    });
+
+    if (!access_token && !refresh_token) {
       return null;
     }
 
     return {
-      access_token,
+      access_token: access_token || "",
       refresh_token: refresh_token || undefined,
       expiry_date: expiry_date ? parseInt(expiry_date) : undefined,
       token_type: token_type || "Bearer",
@@ -342,7 +352,7 @@ export class AuthManager {
     } catch (error: any) {
       console.error(
         `Token refresh failed for ${platform}:`,
-        error.response?.data || error.message
+        error.response?.data || error.message,
       );
       return null;
     }

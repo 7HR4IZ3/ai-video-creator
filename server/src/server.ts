@@ -1,6 +1,8 @@
 import Fastify from "fastify";
+import ngrok from "@ngrok/ngrok";
 import dotenv from "dotenv";
 import path from "path";
+
 import { fileURLToPath } from "url";
 import { AuthManager } from "./auth-manager.js";
 import { WebSocketManager } from "./websocket-manager.js";
@@ -245,6 +247,26 @@ const start = async () => {
     console.log(`🔗 WebSocket endpoint: ws://${host}:${port}/ws`);
     console.log(`📋 Health check: http://${host}:${port}/health`);
 
+    // Start ngrok tunnel
+    if (process.env.NGROK_AUTHTOKEN) {
+      try {
+        const listener = await ngrok.forward({
+          addr: port,
+          authtoken: process.env.NGROK_AUTHTOKEN,
+          domain: process.env.NGROK_DOMAIN,
+        });
+
+        console.log("🌍 Ngrok tunnel active at: ", listener.url());
+        console.log(`🔑 Use this ngrok URL for OAuth Redirects.`);
+      } catch (error) {
+        fastify.log.error("Ngrok connection error:", error);
+      }
+    } else {
+      console.warn(
+        "⚠️  NGROK_AUTHTOKEN not found in .env file. Skipping ngrok tunnel.",
+      );
+    }
+
     // Ping WebSocket connections every 30 seconds
     setInterval(() => {
       wsManager.pingConnections();
@@ -259,6 +281,7 @@ const start = async () => {
 ["SIGINT", "SIGTERM"].forEach((signal) => {
   process.on(signal, async () => {
     console.log(`\nReceived ${signal}, shutting down gracefully...`);
+    await ngrok.disconnect();
     await fastify.close();
     process.exit(0);
   });

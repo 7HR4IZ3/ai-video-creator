@@ -33,7 +33,7 @@ export class OAuthClient {
   }
 
   async authenticate(
-    platform: "youtube" | "facebook" | "tiktok"
+    platform: "youtube" | "facebook" | "tiktok",
   ): Promise<OAuthTokens> {
     // First check if we already have valid tokens
     const existingTokens = await this.getStoredTokens(platform);
@@ -57,14 +57,14 @@ export class OAuthClient {
   }
 
   private async startOAuthFlow(
-    platform: "youtube" | "facebook" | "tiktok"
+    platform: "youtube" | "facebook" | "tiktok",
   ): Promise<OAuthTokens> {
     return new Promise((resolve, reject) => {
       // Start auth flow
       this.startAuth(platform)
         .then(({ authUrl, sessionId }) => {
           console.log(
-            `[OAuth] Please visit the following URL to authorize ${platform}:`
+            `[OAuth] Please visit the following URL to authorize ${platform}:`,
           );
           console.log(`🔗 ${authUrl}`);
 
@@ -79,7 +79,7 @@ export class OAuthClient {
   }
 
   private async startAuth(
-    platform: "youtube" | "facebook" | "tiktok"
+    platform: "youtube" | "facebook" | "tiktok",
   ): Promise<{ authUrl: string; sessionId: string }> {
     try {
       const response = await axios.post(`${this.baseUrl}/auth/start`, {
@@ -88,7 +88,7 @@ export class OAuthClient {
       return response.data;
     } catch (error: any) {
       throw new Error(
-        `Failed to start auth: ${error.response?.data?.error || error.message}`
+        `Failed to start auth: ${error.response?.data?.error || error.message}`,
       );
     }
   }
@@ -96,13 +96,13 @@ export class OAuthClient {
   private connectWebSocket(
     sessionId: string,
     resolve: (tokens: OAuthTokens) => void,
-    reject: (error: Error) => void
+    reject: (error: Error) => void,
   ) {
     this.ws = new WebSocket(this.wsUrl);
 
     this.ws.on("open", () => {
       console.log(
-        "[OAuth] Connected to OAuth server, waiting for authorization..."
+        "[OAuth] Connected to OAuth server, waiting for authorization...",
       );
 
       // Send session mapping
@@ -110,7 +110,7 @@ export class OAuthClient {
         JSON.stringify({
           type: "auth_request",
           sessionId,
-        })
+        }),
       );
     });
 
@@ -126,7 +126,7 @@ export class OAuthClient {
           case "auth_complete":
             if (message.tokens) {
               console.log(
-                `[OAuth] ✅ Authorization successful for ${message.platform}!`
+                `[OAuth] ✅ Authorization successful for ${message.platform}!`,
               );
               this.ws!.close();
               resolve(message.tokens);
@@ -154,12 +154,15 @@ export class OAuthClient {
     });
 
     // Timeout after 5 minutes
-    setTimeout(() => {
-      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-        this.ws.close();
-        reject(new Error("OAuth flow timed out after 5 minutes"));
-      }
-    }, 5 * 60 * 1000);
+    setTimeout(
+      () => {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+          this.ws.close();
+          reject(new Error("OAuth flow timed out after 5 minutes"));
+        }
+      },
+      5 * 60 * 1000,
+    );
   }
 
   private openUrl(url: string) {
@@ -182,7 +185,7 @@ export class OAuthClient {
       spawn(command, args, { detached: true, stdio: "ignore" });
     } catch (error) {
       console.warn(
-        "[OAuth] Could not automatically open browser. Please manually visit the URL above."
+        "[OAuth] Could not automatically open browser. Please manually visit the URL above.",
       );
     }
   }
@@ -198,7 +201,7 @@ export class OAuthClient {
       throw new Error(
         `Failed to get stored tokens: ${
           error.response?.data?.error || error.message
-        }`
+        }`,
       );
     }
   }
@@ -206,7 +209,8 @@ export class OAuthClient {
   async refreshTokens(platform: string): Promise<OAuthTokens | null> {
     try {
       const response = await axios.post(
-        `${this.baseUrl}/tokens/${platform}/refresh`
+        `${this.baseUrl}/tokens/${platform}/refresh`,
+        {},
       );
       console.log(`[OAuth] ✅ Tokens refreshed successfully for ${platform}`);
       return response.data.tokens;
@@ -214,7 +218,7 @@ export class OAuthClient {
       console.warn(
         `[OAuth] Failed to refresh tokens for ${platform}: ${
           error.response?.data?.error || error.message
-        }`
+        }`,
       );
       return null;
     }

@@ -35,13 +35,22 @@ jobs:
         run: |
           python -m venv .venv
           source .venv/bin/activate
-          uv add moviepy click soundfile kokoro faster_whisper pytube pytubefix en-core-web-sm@https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
+          uv add moviepy click soundfile kokoro faster_whisper en-core-web-sm@https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
           sudo apt-get -qq -y install espeak-ng
           sudo apt-get -y install python3-pip
 
       - name: Set up Filesystem
         run: |
           mkdir -p media media/audios media/videos media/outputs media/scripts .secrets
+
+      - name: Set up Environment Variables
+        run: |
+          echo "${{ secrets.ENV_FILE }}" >> .env
+          echo "${{ secrets.SECRETS_FILE }}" >> .secrets/google_client_secret.json
+
+      - name: Run video generation server
+        run: |
+          bun run oauth-server&
 
       - name: Setup Playwright
         run: |
@@ -51,23 +60,7 @@ jobs:
         run: |
           bun download.ts
 
-      - name: Set up Environment Variables
-        run: |
-          echo "${{ secrets.ENV_FILE }}" >> .env
-          echo "${{ secrets.SECRETS_FILE }}" >> .secrets/google_client_secret.json
-
       - name: Run video generation script
         run: |
           source .venv/bin/activate
-          bun src/index.ts generate --limit 3 --concurrent 1 --platform youtube --skip-upload
-
-      - name: Upload output videos
-        uses: actions/upload-artifact@v4
-        with:
-          name: generated-videos
-          path: media/outputs/*.mp4
-
-      - name: Run video generation script
-        run: |
-          source .venv/bin/activate
-          bun src/index.ts upload --platform youtube --story all
+          bun src/index.ts generate --limit 3 --concurrent 3 --platforms youtube
