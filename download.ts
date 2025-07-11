@@ -44,8 +44,8 @@ async function downloadVideo(videoUrl: string) {
     const download = await downloadPromise;
 
     // Save the download to a file with a dynamic name
-    const suggestedFilename = download.suggestedFilename();
-    const outputPath = path.join(OUTPUT_DIR, suggestedFilename);
+    // const suggestedFilename = download.suggestedFilename();
+    const outputPath = path.join(OUTPUT_DIR, "minecraft.mp4");
     await download.saveAs(outputPath);
 
     console.log(`Successfully downloaded video to ${outputPath}`);
