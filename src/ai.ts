@@ -23,7 +23,7 @@ export async function processTextWithAI(
 ): Promise<string> {
   const { text } = await generateText({
     model: openrouter(process.env.OPENROUTER_MODEL || "gpt-4o-mini", {}),
-    prompt: `You are an expert text-to-speech content creator. Transform this Reddit story into a version optimized for AI voice narration on YouTube and TikTok. Focus on creating natural, engaging audio content that flows smoothly when spoken aloud.
+    prompt: `You are an expert text-to-speech content creator. Transform this Reddit story into a version optimized for AI voice narration on YouTube and TikTok. Focus on creating natural, engaging audio content that flows smoothly when spoken aloud, minimizing excessive punctuation.
 
 VOICE-OPTIMIZED WRITING GUIDELINES:
 1. Use simple, conversational language that sounds natural when spoken
@@ -50,7 +50,7 @@ Transform this story now:
 Title: ${title}
 Story: ${story}
 
-Return only the voice-optimized story raw text with no other additional text, only the story!!:`,
+Return only the voice-optimized story raw text with no other additional text, only the story!! Ensure minimal use of punctuation for a cleaner audio experience.:`,
     temperature: 0.6,
     maxTokens: 2500,
   });
