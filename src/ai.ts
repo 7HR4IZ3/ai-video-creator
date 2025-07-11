@@ -28,12 +28,11 @@ export async function processTextWithAI(
 VOICE-OPTIMIZED WRITING GUIDELINES:
 1. Use simple, conversational language that sounds natural when spoken
 2. Break up long sentences into shorter, digestible phrases
-3. Add natural speech patterns with appropriate pauses and breathing points
-4. Use "I" statements and direct address to create intimacy with listeners
-5. Replace complex punctuation with natural speech breaks
-6. Convert abbreviations to full words (AITA → "Am I the asshole", etc. → "and so on")
-7. Use transitional phrases that work well in audio ("So here's what happened", "Now listen to this", "But wait, there's more")
-8. Add emotional context words that help voice inflection ("I was absolutely furious", "I whispered quietly")
+3. Use "I" statements and direct address to create intimacy with listeners
+4. Replace complex punctuation with natural speech breaks
+5. Convert abbreviations to full words (AITA → "Am I the asshole", etc. → "and so on")
+6. Use transitional phrases that work well in audio ("So here's what happened", "Now listen to this", "But wait, there's more")
+7. Add emotional context words that help voice inflection ("I was absolutely furious", "I whispered quietly")
 
 CONTENT REQUIREMENTS:
 - Keep family-friendly and platform-appropriate
@@ -43,7 +42,6 @@ CONTENT REQUIREMENTS:
 - Add natural storytelling elements ("Let me tell you about", "You won't believe what happened next")
 
 VOICE-FRIENDLY FORMATTING:
-- Use periods "." for natural pauses, not complex punctuation
 - Spell out numbers and symbols in words
 - Remove special characters that don't translate to speech
 
@@ -52,7 +50,7 @@ Transform this story now:
 Title: ${title}
 Story: ${story}
 
-Return only the voice-optimized story raw text:`,
+Return only the voice-optimized story raw text with no other additional text, only the story!!:`,
     temperature: 0.6,
     maxTokens: 2500,
   });
