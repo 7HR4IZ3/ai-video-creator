@@ -15,7 +15,7 @@ export interface OAuthTokens {
 
 export interface WebSocketMessage {
   type: "auth_request" | "auth_complete" | "auth_error" | "ping" | "pong";
-  platform?: "youtube" | "facebook" | "tiktok";
+  platform?: "youtube" | "facebook" | "tiktok" | "snapchat";
   sessionId?: string;
   tokens?: OAuthTokens;
   authUrl?: string;
@@ -33,7 +33,7 @@ export class OAuthClient {
   }
 
   async authenticate(
-    platform: "youtube" | "facebook" | "tiktok",
+    platform: "youtube" | "facebook" | "tiktok" | "snapchat",
   ): Promise<OAuthTokens> {
     // First check if we already have valid tokens
     const existingTokens = await this.getStoredTokens(platform);
@@ -79,7 +79,7 @@ export class OAuthClient {
   }
 
   private async startAuth(
-    platform: "youtube" | "facebook" | "tiktok",
+    platform: "youtube" | "facebook" | "tiktok" | "snapchat",
   ): Promise<{ authUrl: string; sessionId: string }> {
     try {
       const response = await axios.post(`${this.baseUrl}/auth/start`, {

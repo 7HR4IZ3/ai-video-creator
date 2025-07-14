@@ -55,12 +55,12 @@ fastify.get("/health", async (request, reply) => {
 
 // Start OAuth flow
 fastify.post<{
-  Body: { platform: "youtube" | "facebook" | "tiktok" };
+  Body: { platform: "youtube" | "facebook" | "tiktok" | "snapchat" };
 }>("/auth/start", async (request, reply) => {
   try {
     const { platform } = request.body;
 
-    if (!platform || !["youtube", "facebook", "tiktok"].includes(platform)) {
+    if (!platform || !["youtube", "facebook", "tiktok", "snapchat"].includes(platform)) {
       return reply.code(400).send({ error: "Invalid platform" });
     }
 
@@ -178,7 +178,7 @@ fastify.get<{
   try {
     const { platform } = request.params;
 
-    if (!["youtube", "facebook", "tiktok"].includes(platform)) {
+    if (!["youtube", "facebook", "tiktok", "snapchat"].includes(platform)) {
       return reply.code(400).send({ error: "Invalid platform" });
     }
 
@@ -209,7 +209,7 @@ fastify.post<{
   try {
     const { platform } = request.params;
 
-    if (!["youtube", "facebook", "tiktok"].includes(platform)) {
+    if (!["youtube", "facebook", "tiktok", "snapchat"].includes(platform)) {
       return reply.code(400).send({ error: "Invalid platform" });
     }
 

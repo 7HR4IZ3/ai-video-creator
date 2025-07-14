@@ -63,7 +63,7 @@ def cli():
     "-v", "--voice", default="af_sarah", help="AI voice to use.", show_default=True
 )
 @click.option(
-    "--pitch", default=1.0, type=float, help="Speech pitch (0.5-2.0).", show_default=True
+    "--pitch", default=1.1, type=float, help="Speech pitch (0.5-2.0).", show_default=True
 )
 @click.option(
     "--emotion", default="neutral", help="Voice emotion (neutral, happy, sad, angry).", show_default=True
@@ -156,7 +156,7 @@ def audio(
                     speed=speed,
                     # pitch=pitch,
                     # emotion=emotion,
-                    split_pattern=r"[.!?]\s+",  # Split on sentence boundaries for better pacing
+                    # split_pattern=r"[.!?]\s+",  # Split on sentence boundaries for better pacing
                     # pause_factor=pause_factor,  # Add natural pauses
                 ):
                     out.write(audio_chunk)
@@ -431,7 +431,7 @@ def editor(
         #                   index += 1
 
         for sub in subtitles_data:
-            for word in sub.words:
+            for word in (sub.words or []):
                 # Create TextClip for video overlay using new style options
                 txt_clip = moviepy.TextClip(
                     font=font.as_posix(),
@@ -489,7 +489,7 @@ def editor(
             write_params["bitrate"] = video_bitrate
 
         # Generate thumbnail from screenshot if available
-        if screenshot_clip and screenshot.exists():
+        if screenshot_clip and screenshot and screenshot.exists():
             thumbnail_path = output.with_suffix('.png')
             if verbose:
                 click.echo(f"Generating thumbnail: {thumbnail_path}")

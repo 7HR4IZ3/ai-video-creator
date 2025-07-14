@@ -84,13 +84,13 @@ export class WebSocketManager {
     }
   }
 
-  notifyAuthComplete(sessionId: string, tokens: OAuthTokens, platform: string) {
+  notifyAuthComplete(sessionId: string, tokens: OAuthTokens, platform: "youtube" | "facebook" | "tiktok" | "snapchat") {
     const connectionId = this.sessionConnections.get(sessionId);
     if (connectionId) {
       console.log(`[WebSocket] Notifying auth complete for session ${sessionId}`);
       this.sendMessage(connectionId, {
         type: 'auth_complete',
-        platform: platform as any,
+        platform: platform,
         sessionId,
         tokens
       });
@@ -102,13 +102,13 @@ export class WebSocketManager {
     }
   }
 
-  notifyAuthError(sessionId: string, error: string, platform: string) {
+  notifyAuthError(sessionId: string, error: string, platform: "youtube" | "facebook" | "tiktok" | "snapchat") {
     const connectionId = this.sessionConnections.get(sessionId);
     if (connectionId) {
       console.log(`[WebSocket] Notifying auth error for session ${sessionId}:`, error);
       this.sendMessage(connectionId, {
         type: 'auth_error',
-        platform: platform as any,
+        platform: platform,
         sessionId,
         error
       });

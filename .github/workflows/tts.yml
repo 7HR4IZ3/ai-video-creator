@@ -1,0 +1,37 @@
+
+name: Generate TTS audio
+
+on:
+  workflow_dispatch:
+
+jobs:
+  generate-audio:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyttsx3
+          pip install transformers
+          pip install datasets
+          pip install soundfile
+          pip install git+https://github.com/Nari-AI/dia.git
+          sudo apt-get update && sudo apt-get install -y espeak
+
+      - name: Run TTS script
+        run: python tts.py
+
+      - name: Upload audio artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: tts-audio
+          path: tts_outputs/

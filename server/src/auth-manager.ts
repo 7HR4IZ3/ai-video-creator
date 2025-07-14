@@ -28,7 +28,7 @@ export class AuthManager {
     );
   }
 
-  generateAuthUrl(platform: "youtube" | "facebook" | "tiktok"): {
+  generateAuthUrl(platform: "youtube" | "facebook" | "tiktok" | "snapchat"): {
     authUrl: string;
     sessionId: string;
   } {
@@ -129,10 +129,7 @@ export class AuthManager {
     };
 
     // Platform-specific parameters
-    if (provider.name === "youtube") {
-      data.client_id = provider.clientId;
-      data.grant_type = "authorization_code";
-    } else if (provider.name === "facebook") {
+    if (provider.name === "youtube" || provider.name === "facebook" || provider.name === "snapchat") {
       data.client_id = provider.clientId;
       data.grant_type = "authorization_code";
     } else if (provider.name === "tiktok") {

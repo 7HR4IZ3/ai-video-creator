@@ -5,7 +5,7 @@ from dia.model import Dia
 
 model = Dia.from_pretrained("nari-labs/Dia-1.6B")
 
-text = "[S1] Dia is an open weights text to dialogue model. [S2] You get full control over scripts and voices. [S1] Wow. Amazing. (laughs) [S2] Try it now on Git hub or Hugging Face."
+text = "\n Dia is an open weights text to dialogue model. \n You get full control over scripts and voices. \n Wow. Amazing. (laughs) \n Try it now on Git hub or Hugging Face."
 
 output = model.generate(text)
 

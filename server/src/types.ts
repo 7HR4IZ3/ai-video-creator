@@ -8,7 +8,7 @@ export interface TiktokOAuthProvider {
   tokenUrl: string;
 }
 export interface OtherOAuthProvider {
-  name: "youtube" | "facebook";
+  name: "youtube" | "facebook" | "snapchat";
   clientId: string;
   clientSecret: string;
   redirectUri: string;
@@ -30,7 +30,7 @@ export interface OAuthTokens {
 }
 
 export interface AuthRequest {
-  platform: "youtube" | "facebook" | "tiktok";
+  platform: "youtube" | "facebook" | "tiktok" | "snapchat";
   sessionId: string;
 }
 

@@ -4,10 +4,11 @@ import { uploadToFacebook } from "./facebook";
 import { uploadToFacebookOAuth } from "./facebook-oauth";
 import { uploadToTikTok } from "./tiktok";
 import { uploadToTikTokOAuth } from "./tiktok-oauth";
+import { uploadToSnapchatOAuth } from "./snapchat-oauth";
 import { saveToFilesystem } from "./filesystem";
 import type { StreamSrc } from "../types";
 
-export type UploadPlatform = "youtube" | "facebook" | "tiktok" | "filesystem";
+export type UploadPlatform = "youtube" | "facebook" | "tiktok" | "snapchat" | "filesystem";
 
 export interface UploadResult {
   success: boolean;
@@ -39,6 +40,10 @@ export async function uploadVideo(
       return useOAuth
         ? uploadToTikTokOAuth(output, title, description, privacy, options)
         : uploadToTikTok(output, title, description, privacy, options);
+    case "snapchat":
+      return useOAuth
+        ? uploadToSnapchatOAuth(output, title, description, privacy, options)
+        : { success: false, error: "Snapchat upload without OAuth is not supported." };
     case "filesystem":
       return saveToFilesystem(output, title, description, options);
     default:

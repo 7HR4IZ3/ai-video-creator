@@ -40,5 +40,17 @@ export const createProviders = (): Record<string, OAuthProvider> => {
       authUrl: "https://www.tiktok.com/v2/auth/authorize/",
       tokenUrl: "https://open.tiktokapis.com/v2/oauth/token/",
     },
+    snapchat: {
+      name: "snapchat",
+      clientId: process.env.SNAPCHAT_CLIENT_ID!,
+      clientSecret: process.env.SNAPCHAT_CLIENT_SECRET!,
+      redirectUri: `${baseUrl}/oauth2callback/snapchat`,
+      scopes: [
+        "snapchat-marketing-api",
+        "snapchat-profile-api",
+      ],
+      authUrl: "https://accounts.snapchat.com/login/oauth2/authorize",
+      tokenUrl: "https://accounts.snapchat.com/login/oauth2/access_token",
+    },
   };
 };
