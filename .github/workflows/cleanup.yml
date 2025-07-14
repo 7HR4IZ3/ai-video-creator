@@ -1,0 +1,21 @@
+
+name: Delete old workflow runs
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *' # Run at midnight every day
+
+jobs:
+  del_runs:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+
+    steps:
+      - name: Delete workflow runs
+        uses: actions/delete-workflow-runs@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          retain_days: 7
+          keep_minimum_runs: 1
