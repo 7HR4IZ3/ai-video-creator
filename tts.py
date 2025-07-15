@@ -9,7 +9,7 @@ import soundfile as sf
 def generate_bark_tts(text_prompt, output_filename="bark_generation.wav"):
     from bark import SAMPLE_RATE, generate_audio, preload_models
     print("Loading Bark models...")
-    preload_models(text_use_small=True, coarse_use_small=True, fine_use_small=True, codec_use_small=True)
+    preload_models(text_use_small=True, coarse_use_small=True, fine_use_small=True)
     print("Generating Bark audio...")
     audio_array = generate_audio(text_prompt)
     print(f"Saving Bark audio to {output_filename}...")
