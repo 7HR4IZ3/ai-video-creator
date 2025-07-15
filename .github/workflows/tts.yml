@@ -25,6 +25,7 @@ jobs:
           pip install datasets
           pip install soundfile
           pip install git+https://github.com/nari-labs/dia.git
+          pip install cosyvoice
           sudo apt-get update && sudo apt-get install -y espeak
 
       - name: Run TTS script

@@ -69,6 +69,22 @@ def generate_dia_tts(text_prompt, output_filename="dia_generation.wav"):
     sf.write(output_filename, audio, samplerate=24000)
     print("Dia audio saved.")
 
+# --- CosyVoice ---
+def generate_cosyvoice_tts(text_prompt, output_filename="cosyvoice_generation.wav"):
+    from cosyvoice.cli.cosyvoice import CosyVoice
+    from cosyvoice.utils.file_utils import load_json
+    
+    print("Initializing CosyVoice model...")
+    model_dir = 'FunAudioLLM/CosyVoice-300M'
+    cosyvoice = CosyVoice(model_dir)
+    
+    print("Generating CosyVoice audio...")
+    output = cosyvoice.inference_sft(text_prompt, 'en', 'female')
+    
+    print(f"Saving CosyVoice audio to {output_filename}...")
+    sf.write(output_filename, output['tts_speech'], samplerate=22050)
+    print("CosyVoice audio saved.")
+
 if __name__ == "__main__":
     text_prompt = "Hello, my name is Suno. And, uh — and I like pizza. [laughs] But I also have other interests such as playing tic tac toe."
 
@@ -77,9 +93,11 @@ if __name__ == "__main__":
     os.makedirs(output_dir, exist_ok=True)
 
     # Generate audio from all models
+    generate_cosyvoice_tts(text_prompt, os.path.join(output_dir, "cosyvoice_generation.wav"))
     generate_bark_tts(text_prompt, os.path.join(output_dir, "bark_generation.wav"))
     generate_pyttsx3_tts(text_prompt, os.path.join(output_dir, "pyttsx3_generation.wav"))
     generate_speecht5_tts(text_prompt, os.path.join(output_dir, "speecht5_generation.wav"))
     generate_dia_tts(text_prompt, os.path.join(output_dir, "dia_generation.wav"))
+
 
     print("All TTS generation complete.")
