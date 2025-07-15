@@ -94,10 +94,10 @@ if __name__ == "__main__":
 
     # Generate audio from all models
     generate_cosyvoice_tts(text_prompt, os.path.join(output_dir, "cosyvoice_generation.wav"))
-    generate_bark_tts(text_prompt, os.path.join(output_dir, "bark_generation.wav"))
-    generate_pyttsx3_tts(text_prompt, os.path.join(output_dir, "pyttsx3_generation.wav"))
-    generate_speecht5_tts(text_prompt, os.path.join(output_dir, "speecht5_generation.wav"))
-    generate_dia_tts(text_prompt, os.path.join(output_dir, "dia_generation.wav"))
+    # generate_bark_tts(text_prompt, os.path.join(output_dir, "bark_generation.wav"))
+    # generate_pyttsx3_tts(text_prompt, os.path.join(output_dir, "pyttsx3_generation.wav"))
+    # generate_speecht5_tts(text_prompt, os.path.join(output_dir, "speecht5_generation.wav"))
+    # generate_dia_tts(text_prompt, os.path.join(output_dir, "dia_generation.wav"))
 
 
     print("All TTS generation complete.")
