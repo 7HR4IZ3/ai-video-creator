@@ -1,6 +1,6 @@
-import Fastify from "fastify";
 import ngrok from "@ngrok/ngrok";
 import dotenv from "dotenv";
+import Fastify from "fastify";
 import path from "path";
 
 import { fileURLToPath } from "url";
@@ -8,6 +8,7 @@ import { AuthManager } from "./auth-manager.js";
 import { WebSocketManager } from "./websocket-manager.js";
 
 import pretty from "pino-pretty";
+import { AuthRequest } from "./types.js";
 
 // Load environment variables
 const __filename = fileURLToPath(import.meta.url);
@@ -83,7 +84,7 @@ fastify.post<{
 
 // OAuth callback handler
 fastify.get<{
-  Params: { platform: string };
+  Params: { platform: AuthRequest["platform"] };
   Querystring: { code?: string; state?: string; error?: string };
 }>("/oauth2callback/:platform", async (request, reply) => {
   try {
@@ -173,7 +174,7 @@ fastify.get<{
 
 // Get stored tokens
 fastify.get<{
-  Params: { platform: string };
+  Params: { platform: AuthRequest["platform"] };
 }>("/tokens/:platform", async (request, reply) => {
   try {
     const { platform } = request.params;
@@ -204,7 +205,7 @@ fastify.get<{
 
 // Refresh tokens
 fastify.post<{
-  Params: { platform: string };
+  Params: { platform: AuthRequest["platform"] };
 }>("/tokens/:platform/refresh", async (request, reply) => {
   try {
     const { platform } = request.params;

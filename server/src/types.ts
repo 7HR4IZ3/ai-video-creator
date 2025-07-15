@@ -43,7 +43,7 @@ export interface AuthResponse {
 
 export interface WebSocketMessage {
   type: "auth_request" | "auth_complete" | "auth_error" | "ping" | "pong";
-  platform?: "youtube" | "facebook" | "tiktok";
+  platform?: AuthRequest["platform"];
   sessionId?: string;
   tokens?: OAuthTokens;
   authUrl?: string;

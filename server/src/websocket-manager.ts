@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import type { WebSocket } from 'ws';
-import type { WebSocketMessage, OAuthTokens } from './types.js';
+import type { WebSocketMessage, OAuthTokens, AuthRequest } from './types.js';
 
 export class WebSocketManager {
   private connections = new Map<string, WebSocket>();
@@ -84,7 +84,7 @@ export class WebSocketManager {
     }
   }
 
-  notifyAuthComplete(sessionId: string, tokens: OAuthTokens, platform: "youtube" | "facebook" | "tiktok" | "snapchat") {
+  notifyAuthComplete(sessionId: string, tokens: OAuthTokens, platform: AuthRequest["platform"]) {
     const connectionId = this.sessionConnections.get(sessionId);
     if (connectionId) {
       console.log(`[WebSocket] Notifying auth complete for session ${sessionId}`);
@@ -102,7 +102,7 @@ export class WebSocketManager {
     }
   }
 
-  notifyAuthError(sessionId: string, error: string, platform: "youtube" | "facebook" | "tiktok" | "snapchat") {
+  notifyAuthError(sessionId: string, error: string, platform: AuthRequest["platform"]) {
     const connectionId = this.sessionConnections.get(sessionId);
     if (connectionId) {
       console.log(`[WebSocket] Notifying auth error for session ${sessionId}:`, error);

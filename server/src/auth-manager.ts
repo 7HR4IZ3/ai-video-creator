@@ -12,7 +12,7 @@ import { createProviders } from "./providers.js";
 const code_verifier = randomBytes(16).toString("utf-8");
 
 export class AuthManager {
-  private providers: Record<string, OAuthProvider>;
+  private providers: Record<AuthRequest["platform"], OAuthProvider>;
   private pendingSessions = new Map<string, AuthRequest>();
   private redis: Redis;
 
@@ -28,7 +28,7 @@ export class AuthManager {
     );
   }
 
-  generateAuthUrl(platform: "youtube" | "facebook" | "tiktok" | "snapchat"): {
+  generateAuthUrl(platform: AuthRequest["platform"]): {
     authUrl: string;
     sessionId: string;
   } {
@@ -80,7 +80,7 @@ export class AuthManager {
   }
 
   async handleCallback(
-    platform: string,
+    platform: AuthRequest["platform"],
     code: string,
     state: string,
   ): Promise<OAuthTokens> {
@@ -212,7 +212,7 @@ export class AuthManager {
   }
 
   private async storeTokens(
-    platform: string,
+    platform: AuthRequest["platform"],
     tokens: OAuthTokens,
   ): Promise<void> {
     console.log("Storing tokens for platform:", platform, tokens);
@@ -256,7 +256,7 @@ export class AuthManager {
     }
   }
 
-  async getStoredTokens(platform: string): Promise<OAuthTokens | null> {
+  async getStoredTokens(platform: AuthRequest["platform"]): Promise<OAuthTokens | null> {
     const keyPrefix = `${platform}:`;
 
     const [
@@ -302,7 +302,7 @@ export class AuthManager {
     return this.pendingSessions.get(sessionId);
   }
 
-  async refreshTokens(platform: string): Promise<OAuthTokens | null> {
+  async refreshTokens(platform: AuthRequest["platform"]): Promise<OAuthTokens | null> {
     const provider = this.providers[platform];
     const storedTokens = await this.getStoredTokens(platform);
 

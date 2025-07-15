@@ -1,6 +1,6 @@
-import type { OAuthProvider } from "./types.js";
+import type { AuthRequest, OAuthProvider } from "./types.js";
 
-export const createProviders = (): Record<string, OAuthProvider> => {
+export const createProviders = (): Record<AuthRequest["platform"], OAuthProvider> => {
   const baseUrl = process.env.OAUTH_BASE_URL || "http://localhost:8090";
   const tiktokURl = "https://9cec-102-89-68-207.ngrok-free.app"
 
