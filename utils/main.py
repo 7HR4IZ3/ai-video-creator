@@ -440,20 +440,22 @@ def editor(
                         int(video_clip.h * 0.15),
                     ),
                     text=word.word.strip(),
-                    font_size=font_size,  # Use new option
-                    color=font_color,  # Use new option
+                    font_size=font_size,
+                    color=font_color,
                     method="caption",
-                    stroke_color=stroke_color,  # Use new option
-                    stroke_width=stroke_width,  # Use new option
+                    stroke_color=stroke_color,
+                    stroke_width=stroke_width,
                 )
 
                 # Adjust subtitle position based on screenshot presence
-                if screenshot_clip and subtitle_position == "center":
-                    # Position subtitles below the screenshot
-                    subtitle_y = (video_clip.h / 2) + (screenshot_clip.h / 2) + 20
-                    txt_clip = txt_clip.with_position(("center", subtitle_y))
-                else:
-                    txt_clip = txt_clip.with_position(subtitle_position)  # Use new option
+                # if screenshot_clip and subtitle_position == "center":
+                #     # Position subtitles below the screenshot
+                #     subtitle_y = (video_clip.h / 2) + (screenshot_clip.h / 2) + 20
+                #     txt_clip = txt_clip.with_position(("center", subtitle_y))
+                # else:
+                #     txt_clip = txt_clip.with_position(subtitle_position)
+
+                txt_clip = txt_clip.with_position(subtitle_position)
 
                 txt_clip = (
                     txt_clip.with_start(word.start)

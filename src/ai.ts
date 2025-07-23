@@ -27,17 +27,14 @@ export async function processTextWithAI(
 
 VOICE-OPTIMIZED WRITING GUIDELINES:
 1. Use simple, conversational language that sounds natural when spoken
-2. Break up long sentences into shorter, digestible phrases
-3. Use "I" statements and direct address to create intimacy with listeners
-4. Replace complex punctuation with natural speech breaks
-5. Convert abbreviations to full words (AITA → "Am I the asshole", etc. → "and so on")
-6. Use transitional phrases that work well in audio ("So here's what happened", "Now listen to this", "But wait, there's more")
-7. Add emotional context words that help voice inflection ("I was absolutely furious", "I whispered quietly")
+2. Use "I" statements and direct address to create intimacy with listeners
+3. Replace complex punctuation with natural speech breaks
+4. Convert abbreviations to full words (AITA → "Am I the asshole", etc. → "and so on")
+5. Use transitional phrases that work well in audio ("So here's what happened", "Now listen to this", "But wait, there's more")
 
 CONTENT REQUIREMENTS:
 - Keep family-friendly and platform-appropriate
 - Maintain the original story structure and key details
-- Make it engaging for audio-only consumption
 - Ensure smooth pacing for 2-3 minute narration
 - Add natural storytelling elements ("Let me tell you about", "You won't believe what happened next")
 
@@ -45,14 +42,15 @@ VOICE-FRIENDLY FORMATTING:
 - Spell out numbers and symbols in words
 - Remove special characters that don't translate to speech
 
-Transform this story now:
+Transform this story now without adding the title or any other text asides the output story:
 
 Title: ${title}
 Story: ${story}
 
-Return only the voice-optimized story raw text with no other additional text, only the story!! Ensure minimal use of punctuation for a cleaner audio experience.:`,
-    temperature: 0.6,
-    maxTokens: 2500,
+Return only the voice-optimized story raw text with no other additional text, only the story!!
+Ensure minimal use of punctuation for a cleaner audio experience.`,
+    temperature: 0.8,
+    maxTokens: 3000,
   });
 
   return text;
