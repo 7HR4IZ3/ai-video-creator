@@ -73,17 +73,47 @@ def generate_dia_tts(text_prompt, output_filename="dia_generation.wav"):
 def generate_cosyvoice_tts(text_prompt, output_filename="cosyvoice_generation.wav"):
     from cosyvoice.cli.cosyvoice import CosyVoice
     from cosyvoice.utils.file_utils import load_json
-    
+
     print("Initializing CosyVoice model...")
     model_dir = 'FunAudioLLM/CosyVoice-300M'
     cosyvoice = CosyVoice(model_dir)
-    
+
     print("Generating CosyVoice audio...")
     output = cosyvoice.inference_sft(text_prompt, 'en', 'female')
-    
+
     print(f"Saving CosyVoice audio to {output_filename}...")
     sf.write(output_filename, output['tts_speech'], samplerate=22050)
     print("CosyVoice audio saved.")
+
+def generate_orpheus_tts(text_prompt, output_filename="orpheus_generation.wav"):
+    from orpheus_tts import OrpheusModel
+    import wave
+    import time
+
+    model = OrpheusModel(model_name ="canopylabs/orpheus-tts-0.1-finetune-prod", max_model_len=2048)
+
+    start_time = time.monotonic()
+    syn_tokens = model.generate_speech(
+       prompt=text_prompt,
+       voice="tara",
+    )
+
+    with wave.open(output_filename, "wb") as wf:
+       wf.setnchannels(1)
+       wf.setsampwidth(2)
+       wf.setframerate(24000)
+
+       total_frames = 0
+       chunk_counter = 0
+       for audio_chunk in syn_tokens: # output streaming
+          chunk_counter += 1
+          frame_count = len(audio_chunk) // (wf.getsampwidth() * wf.getnchannels())
+          total_frames += frame_count
+          wf.writeframes(audio_chunk)
+       duration = total_frames / wf.getframerate()
+
+       end_time = time.monotonic()
+       print(f"It took {end_time - start_time} seconds to generate {duration:.2f} seconds of audio")
 
 if __name__ == "__main__":
     text_prompt = "Hello, my name is Suno. And, uh — and I like pizza. [laughs] But I also have other interests such as playing tic tac toe."
@@ -93,7 +123,8 @@ if __name__ == "__main__":
     os.makedirs(output_dir, exist_ok=True)
 
     # Generate audio from all models
-    generate_cosyvoice_tts(text_prompt, os.path.join(output_dir, "cosyvoice_generation.wav"))
+    generate_orpheus_tts(text_prompt, os.path.join(output_dir, "orpheus_generation.wav"))
+    # generate_cosyvoice_tts(text_prompt, os.path.join(output_dir, "cosyvoice_generation.wav"))
     # generate_bark_tts(text_prompt, os.path.join(output_dir, "bark_generation.wav"))
     # generate_pyttsx3_tts(text_prompt, os.path.join(output_dir, "pyttsx3_generation.wav"))
     # generate_speecht5_tts(text_prompt, os.path.join(output_dir, "speecht5_generation.wav"))

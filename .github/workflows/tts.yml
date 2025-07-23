@@ -27,6 +27,8 @@ jobs:
           pip install git+https://github.com/nari-labs/dia.git
           pip install cosyvoice
           sudo apt-get update && sudo apt-get install -y espeak
+          git clone https://github.com/canopyai/Orpheus-TTS.git
+          cd Orpheus-TTS && pip install orpheus-speech
 
       - name: Run TTS script
         run: python tts.py
