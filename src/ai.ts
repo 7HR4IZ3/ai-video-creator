@@ -23,32 +23,28 @@ export async function processTextWithAI(
 ): Promise<string> {
   const { text } = await generateText({
     model: openrouter(process.env.OPENROUTER_MODEL || "gpt-4o-mini", {}),
-    prompt: `You are an expert text-to-speech content creator. Transform this Reddit story into a version optimized for AI voice narration on YouTube and TikTok. Focus on creating natural, engaging audio content that flows smoothly when spoken aloud, minimizing excessive punctuation.
+    prompt: `You are an expert text-to-speech content creator tasked with transforming a Reddit story into a natural, engaging version optimized for AI voice narration using the Deepseek R1 model and Kokoro 82M voice model for YouTube and TikTok. The output should flow smoothly when spoken aloud, feel conversational, and grab attention quickly. Aim for 300-450 words to fit a 2-3 minute narration.
+    Guidelines for Voice-Optimized Writing:
 
-VOICE-OPTIMIZED WRITING GUIDELINES:
-1. Use simple, conversational language that sounds natural when spoken
-2. Use "I" statements and direct address to create intimacy with listeners
-3. Replace complex punctuation with natural speech breaks
-4. Convert abbreviations to full words (AITA → "Am I the asshole", etc. → "and so on")
-5. Use transitional phrases that work well in audio ("So here's what happened", "Now listen to this", "But wait, there's more")
+    Write in simple, conversational language using "I" statements and direct address like "you know" or "let me tell you" to connect with listeners
+    Replace complex punctuation with short sentences for natural speech breaks. Use periods for pauses and avoid commas unless essential
+    Convert abbreviations to full words, like "Am I the asshole" for AITA and "and so on" for etc
+    Include audio-friendly transitions like "So here’s the deal" or "You won’t believe this"
+    Spell out numbers and symbols in words, like "five" instead of "5"
+    Remove special characters that don’t translate to speech
 
-CONTENT REQUIREMENTS:
-- Keep family-friendly and platform-appropriate
-- Maintain the original story structure and key details
-- Ensure smooth pacing for 2-3 minute narration
-- Add natural storytelling elements ("Let me tell you about", "You won't believe what happened next")
+    Content Requirements:
 
-VOICE-FRIENDLY FORMATTING:
-- Spell out numbers and symbols in words
-- Remove special characters that don't translate to speech
+    Keep it family-friendly and suitable for YouTube and TikTok
+    Preserve the original story’s structure and key details
+    Start with a strong hook to draw listeners in immediately
+    Add storytelling phrases like "Picture this" or "Here’s where it gets wild" for engagement
 
-Transform this story now without adding the title or any other text asides the output story:
+    Transform the story below into voice-optimized text. Use the provided title and story content. Output only the transformed story text, with no title or extra comments.
 
-Title: ${title}
-Story: ${story}
-
-Return only the voice-optimized story raw text with no other additional text, only the story!!
-Ensure minimal use of punctuation for a cleaner audio experience.`,
+    Title: ${title}
+    Story: ${story}
+    `,
     temperature: 0.8,
     maxTokens: 3000,
   });

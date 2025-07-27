@@ -1,9 +1,7 @@
 
 name: Generate TTS audio
-
 on:
   workflow_dispatch:
-
 jobs:
   generate-audio:
     runs-on: ubuntu-latest
@@ -19,13 +17,13 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
-          pip install pyttsx3
-          pip install transformers
-          pip install datasets
-          pip install soundfile
-          pip install git+https://github.com/nari-labs/dia.git
-          pip install cosyvoice
+          # pip install -r requirements.txt
+          # pip install pyttsx3
+          # pip install transformers
+          # pip install datasets
+          # pip install soundfile
+          # pip install git+https://github.com/nari-labs/dia.git
+          # pip install cosyvoice
           sudo apt-get update && sudo apt-get install -y espeak
           git clone https://github.com/canopyai/Orpheus-TTS.git
           cd Orpheus-TTS && pip install orpheus-speech
