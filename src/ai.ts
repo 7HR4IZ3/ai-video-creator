@@ -23,27 +23,50 @@ export async function processTextWithAI(
 ): Promise<string> {
   const { text } = await generateText({
     model: openrouter(process.env.OPENROUTER_MODEL || "gpt-4o-mini", {}),
-    prompt: `You are an expert text-to-speech content creator tasked with transforming a Reddit story into a natural, engaging version optimized for AI voice narration using the Deepseek R1 model and Kokoro 82M voice model for YouTube and TikTok. The output should flow smoothly when spoken aloud, feel conversational, and grab attention quickly. Aim for 300-450 words to fit a 2-3 minute narration.
-    Guidelines for Voice-Optimized Writing:
+    prompt: `
+      **Prompt for Deepseek R1 with Kokoro 82M Voice**
+      
+      You are an AI expert in adapting written stories for voice narration. Your task is to take a Reddit post and transform it into a fluid, engaging script optimized for the Kokoro 82M voice model. Write in a conversational tone that feels natural when spoken aloud on YouTube or TikTok.
+      
+      ---
+      **TARGET OUTPUT**
+      
+      * A continuous, voice-friendly narrative (2–3 minutes) without introductory titles or metadata
+      * Raw text only (no extra notes or labels)
+      ---
+      
+      **VOICE-OPTIMIZED GUIDELINES**
+      
+      1. **Conversational Flow**: Use short, simple sentences. Write as if you’re speaking directly to one listener.
+      2. **Personal Connection**: Include "I" statements and direct addressing ("you") to build rapport.
+      3. **Natural Breaks**: Replace commas and semicolons with transitional phrases or pauses (e.g., "So here’s what happened", "But wait, there’s more").
+      4. **Full Words**: Avoid abbreviations and acronyms. Write out things like "Am I the asshole" instead of "AITA".
+      5. **Smooth Pacing**: Spell out numbers and common symbols ("three" instead of "3"; "percent" instead of "%").
+      6. **Clean Formatting**: Eliminate emojis, markdown, and any special characters that won't read well aloud.
+      7. **Storytelling Flourish**: Add natural lead‑ins ("Let me tell you", "You won’t believe what happened next").
+      
+      ---
+      
+      **CONTENT REQUIREMENTS**
+      
+      * Preserve the key events and structure of the original story
+      * Keep tone family‑friendly and appropriate for YouTube/TikTok
+      * Aim for an emotional arc: setup, conflict, resolution
+      
+      ---
+      
+      **EXAMPLE TRANSFORMATION**
+      
+      *Input:* "Title: AITA for refusing to pay rent? Story: ..."
+      *Output (excerpt):*
+      "Let me tell you about the time my roommate asked me to cover her share of rent. You won’t believe what happened next…"
+      
+      ---
+      Now convert the story below into the optimized narration.
+      
+      Title: ${title}
+      Story: ${story}
 
-    Write in simple, conversational language using "I" statements and direct address like "you know" or "let me tell you" to connect with listeners
-    Replace complex punctuation with short sentences for natural speech breaks. Use periods for pauses and avoid commas unless essential
-    Convert abbreviations to full words, like "Am I the asshole" for AITA and "and so on" for etc
-    Include audio-friendly transitions like "So here’s the deal" or "You won’t believe this"
-    Spell out numbers and symbols in words, like "five" instead of "5"
-    Remove special characters that don’t translate to speech
-
-    Content Requirements:
-
-    Keep it family-friendly and suitable for YouTube and TikTok
-    Preserve the original story’s structure and key details
-    Start with a strong hook to draw listeners in immediately
-    Add storytelling phrases like "Picture this" or "Here’s where it gets wild" for engagement
-
-    Transform the story below into voice-optimized text. Use the provided title and story content. Output only the transformed story text, with no title or extra comments.
-
-    Title: ${title}
-    Story: ${story}
     `,
     temperature: 0.8,
     maxTokens: 3000,
