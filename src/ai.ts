@@ -44,6 +44,7 @@ export async function processTextWithAI(
       5. **Smooth Pacing**: Spell out numbers and common symbols ("three" instead of "3"; "percent" instead of "%").
       6. **Clean Formatting**: Eliminate emojis, markdown, and any special characters that won't read well aloud.
       7. **Storytelling Flourish**: Add natural lead‑ins ("Let me tell you", "You won’t believe what happened next").
+      8. Expand punctuatuons: For example ("Here's" to "Here is") etc.
       
       ---
       
@@ -52,6 +53,8 @@ export async function processTextWithAI(
       * Preserve the key events and structure of the original story
       * Keep tone family‑friendly and appropriate for YouTube/TikTok
       * Aim for an emotional arc: setup, conflict, resolution
+      * Do not add anything else to the output
+      * Only return the storey, with no additional output
       
       ---
       
