@@ -54,19 +54,9 @@ export async function processTextWithAI(
       * Keep tone family‑friendly and appropriate for YouTube/TikTok
       * Aim for an emotional arc: setup, conflict, resolution
       * Do not add anything else to the output
-      * Only return the storey, with no additional output
+      * Only return the story, with no additional output
       
       ---
-      
-      **EXAMPLE TRANSFORMATION**
-      
-      *Input:* "Title: AITA for refusing to pay rent? Story: ..."
-      *Output (excerpt):*
-      "Let me tell you about the time my roommate asked me to cover her share of rent. You won’t believe what happened next…"
-      
-      ---
-      Now convert the story below into the optimized narration.
-      
       Title: ${title}
       Story: ${story}
 
