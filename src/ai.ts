@@ -24,19 +24,15 @@ export async function processTextWithAI(
   const { text } = await generateText({
     model: openrouter(process.env.OPENROUTER_MODEL || "gpt-4o-mini", {}),
     prompt: `
-      **Prompt for Deepseek R1 with Kokoro 82M Voice**
-      
       You are an AI expert in adapting written stories for voice narration. Your task is to take a Reddit post and transform it into a fluid, engaging script optimized for the Kokoro 82M voice model. Write in a conversational tone that feels natural when spoken aloud on YouTube or TikTok.
       
       ---
       **TARGET OUTPUT**
-      
       * A continuous, voice-friendly narrative (2–3 minutes) without introductory titles or metadata
       * Raw text only (no extra notes or labels)
       ---
       
       **VOICE-OPTIMIZED GUIDELINES**
-      
       1. **Conversational Flow**: Use short, simple sentences. Write as if you’re speaking directly to one listener.
       2. **Personal Connection**: Include "I" statements and direct addressing ("you") to build rapport.
       3. **Natural Breaks**: Replace commas and semicolons with transitional phrases or pauses (e.g., "So here’s what happened", "But wait, there’s more").
@@ -49,13 +45,12 @@ export async function processTextWithAI(
       ---
       
       **CONTENT REQUIREMENTS**
-      
       * Preserve the key events and structure of the original story
       * Keep tone family‑friendly and appropriate for YouTube/TikTok
       * Aim for an emotional arc: setup, conflict, resolution
-      * Do not add anything else to the output
+      * Do not add anything else to the output since your full response would be fed directly to the speech model
       * Only return the story, with no additional output
-      
+
       ---
       Title: ${title}
       Story: ${story}
