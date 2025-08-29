@@ -8,7 +8,7 @@ export async function uploadToYoutubeOAuth(
   title: string,
   description: string,
   privacy: string = "public",
-  retrying: boolean = false
+  retrying: boolean = false,
 ) {
   const oauthClient = new OAuthClient();
 
@@ -25,7 +25,7 @@ export async function uploadToYoutubeOAuth(
       process.env.YOUTUBE_CLIENT_ID,
       process.env.YOUTUBE_CLIENT_SECRET,
       process.env.YOUTUBE_REDIRECT_URI ||
-        "http://localhost:3001/oauth2callback/youtube"
+        "http://localhost:3001/oauth2callback/youtube",
     );
 
     oauth.setCredentials(tokens);
@@ -45,7 +45,7 @@ export async function uploadToYoutubeOAuth(
       "[YouTube] Attempting to upload video:",
       title,
       "from path:",
-      output.src
+      output.src,
     );
 
     const fileSize = fs.statSync(output.src).size;
@@ -57,6 +57,11 @@ export async function uploadToYoutubeOAuth(
         snippet: {
           title,
           description,
+          tags: [
+            "redditstory", "reddit", "aitah",
+            "aita", "fyp", "viral"
+          ],
+          publishedAt: new Date().toISOString(),
           channelId: process.env.YOUTUBE_CHANNEL_ID,
         },
         status: {
@@ -70,7 +75,7 @@ export async function uploadToYoutubeOAuth(
 
     console.log(
       "[YouTube] ✅ Successfully uploaded video! Video ID:",
-      response.data.id
+      response.data.id,
     );
 
     return {
@@ -96,7 +101,7 @@ export async function uploadToYoutubeOAuth(
           title,
           description,
           privacy,
-          true
+          true,
         );
       } catch (refreshError) {
         console.error("[YouTube] Failed to refresh tokens:", refreshError);

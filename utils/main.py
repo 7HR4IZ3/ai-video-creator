@@ -249,7 +249,7 @@ def audio(
 # --- Subtitle Styling Options ---
 @click.option(
     "--font_size",
-    default=22,
+    default=30,
     type=int,
     help="Font size for subtitles.",
     show_default=True,
