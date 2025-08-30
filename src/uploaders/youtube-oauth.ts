@@ -50,6 +50,9 @@ export async function uploadToYoutubeOAuth(
 
     const fileSize = fs.statSync(output.src).size;
     console.log("[YouTube] File size:", fileSize, "bytes");
+    
+    const now = new Date();
+    const tomorrow = new Date(now.setDate(now.getDate() + 1));
 
     const response = await youtube.videos.insert({
       part: ["snippet", "status"],
@@ -61,11 +64,12 @@ export async function uploadToYoutubeOAuth(
             "redditstory", "reddit", "aitah",
             "aita", "fyp", "viral"
           ],
-          publishedAt: new Date().toISOString(),
+          publishedAt: now.toISOString(),
           channelId: process.env.YOUTUBE_CHANNEL_ID,
         },
         status: {
-          privacyStatus: privacy as any,
+          privacyStatus: "private",
+          publishAt: tomorrow.toISOString()
         },
       },
       media: {
