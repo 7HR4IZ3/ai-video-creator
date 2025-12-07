@@ -24,40 +24,55 @@ export async function processTextWithAI(
   const { text } = await generateText({
     model: openrouter(process.env.OPENROUTER_MODEL || "gpt-4o-mini", {}),
     prompt: `
-      You are an AI expert in adapting written stories for voice narration. Your task is to take a Reddit post and transform it into a fluid, engaging script optimized for the Kokoro 82M voice model. Write in a conversational tone that feels natural when spoken aloud on YouTube or TikTok.
-      
+      You are an expert narrator creating captivating voice-over scripts for YouTube Shorts and TikTok. Transform this Reddit story into an engaging 60-90 second audio narrative that hooks listeners instantly.
+
       ---
-      **TARGET OUTPUT**
-      * A continuous, voice-friendly narrative (2–3 minutes) without introductory titles or metadata
-      * Raw text only (no extra notes or labels)
-      ---
+      **VOICE OPTIMIZATION RULES**
       
-      **VOICE-OPTIMIZED GUIDELINES**
-      1. **Conversational Flow**: Use short, simple sentences. Write as if you’re speaking directly to one listener.
-      2. **Personal Connection**: Include "I" statements and direct addressing ("you") to build rapport.
-      3. **Natural Breaks**: Replace commas and semicolons with transitional phrases or pauses (e.g., "So here’s what happened", "But wait, there’s more").
-      4. **Full Words**: Avoid abbreviations and acronyms. Write out things like "Am I the asshole" instead of "AITA".
-      5. **Smooth Pacing**: Spell out numbers and common symbols ("three" instead of "3"; "percent" instead of "%").
-      6. **Clean Formatting**: Eliminate emojis, markdown, and any special characters that won't read well aloud.
-      7. **Storytelling Flourish**: Add natural lead‑ins ("Let me tell you", "You won’t believe what happened next").
-      8. Expand punctuatuons: For example ("Here's" to "Here is") etc.
-      
+      1. **Hook First**: Start with a compelling hook that grabs attention in the first 3 seconds
+         - "You won't believe what happened when..."
+         - "This is the craziest thing I've ever experienced..."
+         
+      2. **Emotional Markers**: Add natural emotional cues
+         - Use ONE word in CAPS per paragraph for emphasis: "I was absolutely SHOCKED"
+         - Add pause markers with ellipsis: "And then... it happened"
+         - Include breath beats: "So here's the thing..."
+         
+      3. **Pacing Mastery**:
+         - Short, punchy sentences for tension and drama
+         - Slightly longer sentences for descriptions
+         - End sections with hooks: "But that's not even the worst part"
+         
+      4. **TTS-Perfect Formatting**:
+         - Spell out ALL numbers: "three hundred dollars" not "300"
+         - No abbreviations: "Am I the asshole" not "AITA"
+         - Write contractions as full words: "I am" not "I'm", "cannot" not "can't"
+         - Phonetic spellings for unusual words if needed
+         
+      5. **Conversational Flow**:
+         - Use "I" statements for intimacy
+         - Address the listener with "you": "Can you imagine?"
+         - Natural transitions: "So anyway", "But here is the thing", "Fast forward to"
+         
+      6. **Clean Output**:
+         - NO emojis, markdown, or special characters
+         - NO meta-commentary or labels
+         - NO introduction like "Here's the story" - dive right in
+         - Output ONLY the narration script
       ---
       
       **CONTENT REQUIREMENTS**
-      * Preserve the key events and structure of the original story
-      * Keep tone family‑friendly and appropriate for YouTube/TikTok
-      * Aim for an emotional arc: setup, conflict, resolution
-      * Do not add anything else to the output since your full response would be fed directly to the speech model
-      * Only return the story, with no additional output
-
+      - Keep it family-friendly and platform-appropriate
+      - Preserve key story beats and emotional arc
+      - Build to a satisfying conclusion or cliffhanger
+      - Total length: 150-300 words for 60-90 seconds of audio
+      
       ---
       Title: ${title}
       Story: ${story}
-
     `,
-    temperature: 0.8,
-    maxTokens: 3000,
+    temperature: 0.75,
+    maxTokens: 2500,
   });
 
   return text;

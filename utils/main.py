@@ -2,11 +2,21 @@ import click
 import moviepy
 import datetime
 import soundfile
+import tempfile
+import numpy as np
 
 from pathlib import Path
 from random import randint
 from kokoro import KPipeline
 from faster_whisper import WhisperModel, BatchedInferencePipeline
+
+# Optional pydub for audio normalization
+try:
+    from pydub import AudioSegment
+    from pydub.effects import normalize as normalize_audio_levels, compress_dynamic_range
+    PYDUB_AVAILABLE = True
+except ImportError:
+    PYDUB_AVAILABLE = False
 
 BASE_DIR = Path(__file__).parent.parent
 
@@ -83,6 +93,12 @@ def cli():
 @click.option(
     "--use-dia", is_flag=True, default=False, help="Use Dia model for audio generation."
 )
+@click.option(
+    "--normalize", is_flag=True, default=True, help="Normalize audio levels for consistent volume."
+)
+@click.option(
+    "--compression", is_flag=True, default=False, help="Apply dynamic range compression."
+)
 def audio(
     text: str,
     output: Path,
@@ -93,6 +109,8 @@ def audio(
     # pause_factor: float,
     verbose: bool,
     use_dia: bool,
+    normalize: bool,
+    compression: bool,
 ):
     """Convert TEXT to audio and save to OUTPUT. Supports Kokoro TTS and Dia."""
     if verbose:
@@ -147,8 +165,11 @@ def audio(
             processed_text = processed_text.replace("—", ", ")  # Convert em-dashes to commas
             processed_text = processed_text.replace("–", ", ")  # Convert en-dashes to commas
 
+            # Generate to temp file first for post-processing
+            temp_output = output if not (normalize or compression) else Path(tempfile.mktemp(suffix=".wav"))
+            
             with soundfile.SoundFile(
-                output.as_posix(), "w", 24000, 1
+                temp_output.as_posix(), "w", 24000, 1
             ) as out:  # Kokoro default SR
                 for _, _, audio_chunk in pipeline(
                     processed_text,
@@ -156,10 +177,38 @@ def audio(
                     speed=speed,
                     # pitch=pitch,
                     # emotion=emotion,
-                    # split_pattern=r"[.!?]\s+",  # Split on sentence boundaries for better pacing
-                    # pause_factor=pause_factor,  # Add natural pauses
                 ):
                     out.write(audio_chunk)
+            
+            # Apply audio post-processing if enabled
+            if (normalize or compression) and PYDUB_AVAILABLE:
+                if verbose:
+                    click.echo("Applying audio post-processing...")
+                
+                audio_seg = AudioSegment.from_file(temp_output.as_posix())
+                
+                if normalize:
+                    audio_seg = normalize_audio_levels(audio_seg)
+                    if verbose:
+                        click.echo("  ✓ Audio normalized")
+                
+                if compression:
+                    audio_seg = compress_dynamic_range(audio_seg, threshold=-20.0, ratio=4.0)
+                    if verbose:
+                        click.echo("  ✓ Dynamic range compression applied")
+                
+                # Export to final output
+                audio_seg.export(output.as_posix(), format=output.suffix[1:])
+                
+                # Clean up temp file
+                if temp_output != output:
+                    temp_output.unlink(missing_ok=True)
+            elif (normalize or compression) and not PYDUB_AVAILABLE:
+                click.echo("Warning: pydub not available, skipping audio normalization. Install with: pip install pydub", err=True)
+                if temp_output != output:
+                    import shutil
+                    shutil.move(temp_output.as_posix(), output.as_posix())
+            
             if verbose:
                 click.echo(f"Successfully saved Kokoro TTS audio to {output}")
     except Exception as e:
@@ -249,7 +298,7 @@ def audio(
 # --- Subtitle Styling Options ---
 @click.option(
     "--font_size",
-    default=32,
+    default=42,
     type=int,
     help="Font size for subtitles.",
     show_default=True,
@@ -265,7 +314,7 @@ def audio(
 )
 @click.option(
     "--stroke_width",
-    default=1,
+    default=2,
     type=int,
     help="Stroke width for subtitle text.",
     show_default=True,
@@ -480,15 +529,25 @@ def editor(
         if verbose:
             click.echo(f"Writing final video to {output}...")
 
-        # Use new output options
+        # Use new output options with enhanced quality settings
         write_params = {
             "codec": video_codec,
             "audio_codec": audio_codec,
-            "threads": 4,  # Consider making configurable
-            "logger": ("bar"),  # Show progress bar unless verbose
+            "audio_bitrate": "192k",  # Higher audio quality
+            "preset": "slow",  # Better quality encoding (slower but worth it)
+            "threads": 4,
+            "logger": "bar",
+            "ffmpeg_params": [
+                "-profile:v", "high",
+                "-level:v", "4.1", 
+                "-pix_fmt", "yuv420p",
+                "-movflags", "+faststart",  # Optimize for web streaming
+            ],
         }
         if video_bitrate:
             write_params["bitrate"] = video_bitrate
+        else:
+            write_params["bitrate"] = "8000k"  # Default high quality bitrate
 
         # Generate thumbnail from screenshot if available
         if screenshot_clip and screenshot and screenshot.exists():

@@ -47,6 +47,11 @@ export function createUploadableVideo(
           outputPath,
           "--screenshot",
           screenshotPath,
+          // Enhanced quality parameters
+          "--font_size",
+          "42",
+          "--stroke_width",
+          "2",
         ],
         {
           cwd: process.cwd(),

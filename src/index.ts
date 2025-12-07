@@ -9,6 +9,8 @@ import { readFile, readdir } from "fs/promises";
 import { CWD } from "./constants";
 import { generateAudio } from "./audio";
 import { grabStories } from "./sources/reddit";
+import { createRankingVideo, generateRankingNarration } from "./sources/ranking";
+import { createMovieRecap } from "./sources/movie";
 import { createUploadableVideo } from "./video";
 import { grabGameplayVideo } from "./scrapers";
 import { exists } from "fs/promises";
@@ -391,8 +393,7 @@ program
                 return overallResults;
               } catch (err) {
                 console.error(
-                  `[❌]: Error processing story "${storyName}": ${
-                    (err as Error).message
+                  `[❌]: Error processing story "${storyName}": ${(err as Error).message
                   }`,
                 );
                 return {
@@ -521,8 +522,7 @@ program
         const hasVideo = await exists(videoPath);
 
         console.log(
-          `- ${storyName}: ${storyData.title} ${
-            hasVideo ? "[✅ Video]" : "[❌ No Video]"
+          `- ${storyName}: ${storyData.title} ${hasVideo ? "[✅ Video]" : "[❌ No Video]"
           }`,
         );
       }
@@ -606,5 +606,180 @@ TIKTOK_ACCESS_TOKEN=your_access_token
       "\n[ℹ️]: After updating your .env file, restart the application for changes to take effect.",
     );
   });
+
+// ==========================================
+// Ranking Video Mode
+// ==========================================
+program
+  .command("generate-ranking")
+  .option("--topic <string>", "ranking topic (auto-generates if not specified)")
+  .option("--count <number>", "number of items in ranking", "5")
+  .option("--skip-upload", "skip upload")
+  .option(
+    "--platforms <string>",
+    "upload platforms (youtube, tiktok, filesystem)",
+    "youtube",
+  )
+  .option("--privacy <string>", "privacy setting", "private")
+  .description("Generate a ranking video (e.g., Top 5 X)")
+  .action(
+    async (options: {
+      topic?: string;
+      count?: string;
+      skipUpload?: boolean;
+      platforms?: string;
+      privacy?: string;
+    }) => {
+      await initializeDirectories();
+
+      console.log("[🏆] Starting ranking video generation...");
+
+      try {
+        // Create ranking
+        const ranking = await createRankingVideo(
+          options.topic,
+          parseInt(options.count || "5"),
+        );
+
+        console.log(`[📝] Topic: ${ranking.topic}`);
+        console.log(`[📊] Items: ${ranking.items.length}`);
+
+        // Generate narration
+        const narration = await generateRankingNarration(ranking);
+        console.log("[🎙️] Narration generated");
+
+        // Create story-like object for audio generation
+        const storyLike = {
+          id: ranking.id,
+          name: ranking.id,
+          title: ranking.topic,
+          body: narration,
+          url: "",
+          author: { name: "AI" },
+        };
+
+        // Generate audio
+        console.log("[🎶] Generating audio...");
+        const audio = await generateAudio(storyLike as RedditStory);
+
+        // TODO: Download clips for each ranking item
+        // TODO: Stitch clips with number overlays
+        // For now, use gameplay video as placeholder
+        console.log("[🎬] Generating video...");
+        const video = await grabGameplayVideo();
+        const final = await createUploadableVideo(audio, video, {
+          story: storyLike as RedditStory,
+        });
+
+        console.log("[✅] Ranking video generated!");
+
+        // Upload if not skipped
+        if (!options.skipUpload && options.platforms) {
+          for (const platform of options.platforms.split(",")) {
+            console.log(`[🚀] Uploading to ${platform}...`);
+            await uploadVideo(
+              platform.trim() as UploadPlatform,
+              final,
+              ranking.topic,
+              `Top ${ranking.items.length} ranking video`,
+              options.privacy,
+            );
+          }
+        }
+      } catch (error) {
+        console.error("[❌] Error generating ranking video:", error);
+        process.exit(1);
+      }
+    },
+  );
+
+// ==========================================
+// Movie Recap Mode
+// ==========================================
+program
+  .command("generate-recap")
+  .requiredOption("--movie <string>", "path to movie file")
+  .requiredOption("--title <string>", "movie title")
+  .option("--max-clips <number>", "maximum clips to extract", "5")
+  .option("--skip-upload", "skip upload")
+  .option(
+    "--platforms <string>",
+    "upload platforms (youtube, tiktok, filesystem)",
+    "youtube",
+  )
+  .option("--privacy <string>", "privacy setting", "private")
+  .description("Generate a movie recap video")
+  .action(
+    async (options: {
+      movie: string;
+      title: string;
+      maxClips?: string;
+      skipUpload?: boolean;
+      platforms?: string;
+      privacy?: string;
+    }) => {
+      await initializeDirectories();
+
+      console.log(`[🎬] Starting movie recap for: ${options.title}`);
+
+      // Check if movie file exists
+      if (!(await exists(options.movie))) {
+        console.error(`[❌] Movie file not found: ${options.movie}`);
+        process.exit(1);
+      }
+
+      try {
+        // Create recap
+        const recap = await createMovieRecap(
+          options.movie,
+          options.title,
+          parseInt(options.maxClips || "5"),
+        );
+
+        console.log(`[📊] Extracted ${recap.clips.length} clips`);
+
+        // Create story-like object for audio generation
+        const storyLike = {
+          id: recap.id,
+          name: recap.id,
+          title: `${options.title} - Quick Recap`,
+          body: recap.narration,
+          url: "",
+          author: { name: "AI" },
+        };
+
+        // Generate audio from narration
+        console.log("[🎶] Generating narration audio...");
+        const audio = await generateAudio(storyLike as RedditStory);
+
+        // TODO: Stitch extracted clips together
+        // For now, use first extracted clip or gameplay as placeholder
+        console.log("[🎬] Generating final video...");
+        const video = await grabGameplayVideo();
+        const final = await createUploadableVideo(audio, video, {
+          story: storyLike as RedditStory,
+        });
+
+        console.log("[✅] Movie recap generated!");
+
+        // Upload if not skipped
+        if (!options.skipUpload && options.platforms) {
+          for (const platform of options.platforms.split(",")) {
+            console.log(`[🚀] Uploading to ${platform}...`);
+            await uploadVideo(
+              platform.trim() as UploadPlatform,
+              final,
+              `${options.title} - Quick Recap`,
+              `Movie recap of ${options.title}`,
+              options.privacy,
+            );
+          }
+        }
+      } catch (error) {
+        console.error("[❌] Error generating movie recap:", error);
+        process.exit(1);
+      }
+    },
+  );
 
 program.parse();
