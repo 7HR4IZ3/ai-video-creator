@@ -18,6 +18,8 @@ Artifacts are `voice-qwen3-custom`, `voice-chatterbox-nano`, `voice-chatterbox-t
 
 Qwen uses the Ryan preset and the supplied acting directions. Kokoro uses af_heart at normal speed. Chatterbox uses the checkpoint's bundled voice conditioning, so no private reference recording or secret is required. These are different voice identities, not a controlled same-speaker cloning test. Nano/Turbo do not implement arbitrary acting instructions, so their directions remain review metadata. Their upstream code supports optional reference audio with `TTS_REFERENCE_AUDIO`.
 
+Kokoro's English spaCy model is installed from a pinned wheel during setup and verified before voice weights download. Synthesis fails with setup instructions if it is absent, rather than launching an implicit package installer. The obsolete root `pyvenv.cfg` was removed because it made uv mistake the checkout for a broken virtual environment.
+
 Python packages are locked separately for Qwen, Kokoro, and Chatterbox. CPU PyTorch wheels avoid unnecessary CUDA downloads. Model checkpoints and Chatterbox source are pinned to the researched revisions. Changing a model revision should be followed by a fresh audition. The workflow targets ordinary Ubuntu CPU runners. Qwen's throughput and memory fit on hosted runners remain to be measured; its 120-minute job limit is a bound, not a runtime claim.
 
 ## Local commands

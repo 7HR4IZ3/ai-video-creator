@@ -35,6 +35,7 @@ jobs:
         with:
           python-version: '3.11'
       - run: python -m py_compile utils/story_voice.py
+      - run: python -m unittest discover -s tests/story -p "*_test.py"
 
   editor:
     name: OpenCode story editor
@@ -104,8 +105,13 @@ jobs:
             kokoro) echo 'VOICE_REQUIREMENTS=requirements/story/kokoro.txt' >> "$GITHUB_ENV" ;;
           esac
           uv venv --python 3.11 .voice-venv
+          echo "VIRTUAL_ENV=$GITHUB_WORKSPACE/.voice-venv" >> "$GITHUB_ENV"
+          echo "$GITHUB_WORKSPACE/.voice-venv/bin" >> "$GITHUB_PATH"
       - name: Install this voice's pinned CPU dependencies
         run: uv pip sync --python .voice-venv/bin/python --extra-index-url https://download.pytorch.org/whl/cpu "$VOICE_REQUIREMENTS"
+      - name: Verify Kokoro English processing before downloading voice weights
+        if: matrix.model == 'kokoro'
+        run: .voice-venv/bin/python -c "import spacy; nlp = spacy.load('en_core_web_sm', enable=['tok2vec', 'tagger']); assert len(nlp('The spare key.')) > 0"
       - name: Cache this voice's downloaded weights
         uses: actions/cache@v4
         with:

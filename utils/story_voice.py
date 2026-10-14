@@ -1,5 +1,6 @@
 """CPU narration worker. Spoken text and production directions remain separate."""
 import argparse
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -7,6 +8,15 @@ import random
 import subprocess
 import tempfile
 import time
+
+
+def require_kokoro_language_model():
+    if importlib.util.find_spec("en_core_web_sm") is None:
+        raise RuntimeError(
+            "Kokoro requires en_core_web_sm before synthesis. Install the pinned "
+            "requirements/story/kokoro.txt into the same Python environment. "
+            "The narrator will not install packages at runtime."
+        )
 
 
 def main():
@@ -22,6 +32,9 @@ def main():
     reference = os.getenv("TTS_REFERENCE_AUDIO")
     if reference and not Path(reference).is_file():
         raise ValueError("TTS_REFERENCE_AUDIO does not point to an existing narrator WAV")
+
+    if args.model == "kokoro":
+        require_kokoro_language_model()
 
     import numpy as np
     import soundfile as sf
@@ -44,8 +57,8 @@ def main():
         from kokoro import KModel, KPipeline
         from huggingface_hub import snapshot_download
         model_path = Path(snapshot_download("hexgrad/Kokoro-82M", revision=revision, allow_patterns=["config.json", "kokoro-v1_0.pth", "voices/*.pt"]))
-        model = KModel(config=str(model_path / "config.json"), model=str(model_path / "kokoro-v1_0.pth")).to("cpu").eval()
-        pipeline = KPipeline(lang_code="a", model=model, device="cpu")
+        model = KModel(repo_id="hexgrad/Kokoro-82M", config=str(model_path / "config.json"), model=str(model_path / "kokoro-v1_0.pth")).to("cpu").eval()
+        pipeline = KPipeline(lang_code="a", repo_id="hexgrad/Kokoro-82M", model=model, device="cpu")
         voice = os.getenv("TTS_VOICE", "af_heart")
         speed = float(os.getenv("TTS_SPEED", "1.0"))
         voice_path = model_path / "voices" / f"{voice}.pt"
