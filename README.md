@@ -1,3 +1,5 @@
+Episode recaps now use timestamped episode evidence, show memory, Turbo narration, and selected source footage. See [episode recap usage](docs/episode-recaps.md).
+
 # Video Creator
 
 ## Current story generation

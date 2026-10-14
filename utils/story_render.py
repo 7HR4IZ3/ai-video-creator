@@ -93,6 +93,25 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     return header + "\n".join(rows) + "\n"
 
 
+def align_audio(audio, text, audio_hash):
+    import torch
+    import stable_whisper
+    from huggingface_hub import snapshot_download
+    torch.set_num_threads(min(4, os.cpu_count() or 2))
+    checkpoint = snapshot_download("Systran/faster-whisper-base.en", revision=ALIGN_REVISION)
+    model = stable_whisper.load_faster_whisper(checkpoint, device="cpu", compute_type="int8", cpu_threads=min(4, os.cpu_count() or 2))
+    print("[Editor] Aligning the approved narration", flush=True)
+    # Alignment estimates times for supplied words; it does not write a new transcript.
+    result = model.align(str(Path(audio).resolve()), text, language="en", original_split=True)
+    if result is None:
+        raise RuntimeError("Narration could not be aligned")
+    words = [word.to_dict() for segment in result.segments for word in segment.words]
+    alignment = {"version": RENDER_VERSION, "audioSha256": audio_hash, "text": text,
+                 "model": "Systran/faster-whisper-base.en", "revision": ALIGN_REVISION, "words": words}
+    del model
+    return alignment
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--production", required=True, type=Path)
@@ -129,21 +148,7 @@ def main():
         if saved.get("audioSha256") == audio_hash and saved.get("text") == text and saved.get("version") == RENDER_VERSION:
             alignment = saved
     if alignment is None:
-        import torch
-        import stable_whisper
-        from huggingface_hub import snapshot_download
-        torch.set_num_threads(min(4, os.cpu_count() or 2))
-        checkpoint = snapshot_download("Systran/faster-whisper-base.en", revision=ALIGN_REVISION)
-        model = stable_whisper.load_faster_whisper(checkpoint, device="cpu", compute_type="int8", cpu_threads=min(4, os.cpu_count() or 2))
-        print("[Editor] Aligning the approved narration", flush=True)
-        # Alignment estimates times for supplied words; it does not write a new transcript.
-        result = model.align(str(args.audio.resolve()), text, language="en", original_split=True)
-        if result is None:
-            raise RuntimeError("Narration could not be aligned")
-        words = [word.to_dict() for segment in result.segments for word in segment.words]
-        alignment = {"version": RENDER_VERSION, "audioSha256": audio_hash, "text": text,
-                     "model": "Systran/faster-whisper-base.en", "revision": ALIGN_REVISION, "words": words}
-        del model
+        alignment = align_audio(args.audio, text, audio_hash)
     validate_alignment(alignment["words"], text, duration)
     phrases = caption_phrases(alignment["words"])
     args.output.parent.mkdir(parents=True, exist_ok=True)

@@ -1,0 +1,158 @@
+name: Episode recap pipeline
+
+on:
+  push:
+    branches: [main]
+    paths: ['src/recap/**', 'utils/recap_*.py', 'utils/story_render.py', 'tests/recap/**', '.github/workflows/episode-recap.yml']
+  pull_request:
+    paths: ['src/recap/**', 'utils/recap_*.py', 'utils/story_render.py', 'tests/recap/**', '.github/workflows/episode-recap.yml']
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Synthetic evidence fixture or actual episode analysis
+        type: choice
+        options: [fixture, episode]
+        default: fixture
+      video_url:
+        description: Direct video URL required for episode mode
+        type: string
+      episode_json:
+        description: Episode metadata JSON required for episode mode
+        type: string
+        default: '{"showId":"example","id":"ep1","order":1,"continuity":"main","title":"Episode 1"}'
+      memory_url:
+        description: Optional approved show-memory bundle URL
+        type: string
+      memory_sha256:
+        description: Required SHA-256 when a memory URL is supplied
+        type: string
+      seconds:
+        description: Target runtime for episode mode; fixture uses 20 seconds
+        type: string
+        default: '300'
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - run: bun install --frozen-lockfile
+      - run: bun test tests/recap tests/story
+      - run: bunx tsc --noEmit --skipLibCheck --moduleResolution bundler --module preserve --target es2022 --types bun src/recap/cli.ts
+      - run: python3 -m unittest discover -s tests/story -p '*_test.py'
+      - run: python3 -m unittest discover -s tests/recap -p '*_test.py'
+  media-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      RENDER_PYTHON: .render-venv/bin/python
+      HF_HOME: ${{ github.workspace }}/.cache/huggingface
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - run: bun install --frozen-lockfile
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: 0.7.14
+          enable-cache: true
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg espeak-ng fonts-dejavu-core
+      - run: uv venv --python 3.11 .render-venv && uv pip sync --python .render-venv/bin/python requirements/story/render.txt
+      - uses: actions/cache@v4
+        with:
+          path: .cache/huggingface
+          key: recap-alignment-v1
+      - run: bun run tests/recap/fixture.ts media/recap-fixture --render
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: recap-media-smoke
+          path: media/recap-fixture
+  integration:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      TTS_PYTHON: .voice-venv/bin/python
+      RENDER_PYTHON: .render-venv/bin/python
+      HF_HOME: ${{ github.workspace }}/.cache/huggingface
+      TOKENIZERS_PARALLELISM: 'false'
+      TTS_CPU_THREADS: '4'
+      TTS_SEED: '42'
+      MODE: ${{ inputs.mode }}
+      VIDEO_URL: ${{ inputs.video_url }}
+      EPISODE_JSON: ${{ inputs.episode_json }}
+      TARGET_SECONDS: ${{ inputs.seconds }}
+      GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+      MEMORY_URL: ${{ inputs.memory_url }}
+      MEMORY_SHA256: ${{ inputs.memory_sha256 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - run: bun install --frozen-lockfile
+      - run: bun add --global --trust @opencode/cli@2.0.29
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: 0.7.14
+          enable-cache: true
+      - run: sudo apt-get update && sudo apt-get install -y ffmpeg espeak-ng libsndfile1 sox fonts-dejavu-core
+      - name: Install separate narration and alignment environments
+        run: |
+          uv venv --python 3.11 .voice-venv
+          uv pip sync --python .voice-venv/bin/python requirements/story/chatterbox.txt
+          uv venv --python 3.11 .render-venv
+          uv pip sync --python .render-venv/bin/python requirements/story/render.txt
+      - uses: actions/cache@v4
+        with:
+          path: .cache/huggingface
+          key: recap-turbo-alignment-v1
+      - name: Configure existing credentials privately
+        env:
+          STORY_ENV: ${{ secrets.ENV_FILE }}
+        run: bun -e 'await Bun.write(".env", process.env.STORY_ENV || "")'
+      - name: Fetch a pinned approved memory bundle
+        if: inputs.memory_url != ''
+        run: |
+          mkdir -p media/recap-integration
+          bun -e 'const expected=process.env.MEMORY_SHA256; if(!/^[a-f0-9]{64}$/.test(expected || "")) throw new Error("memory_sha256 is required"); const response=await fetch(process.env.MEMORY_URL,{signal:AbortSignal.timeout(60000)}); if(!response.ok) throw new Error("Memory download failed"); const data=await response.arrayBuffer(); if(data.byteLength>10000000 || new Bun.CryptoHasher("sha256").update(data).digest("hex")!==expected) throw new Error("Memory bundle size/hash mismatch"); await Bun.write("media/recap-integration/input-memory.json",data)'
+      - name: Run the actual episode CLI
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p media/recap-integration
+          memory_args=()
+          if [ -n "$MEMORY_URL" ]; then memory_args=(--memory media/recap-integration/input-memory.json); fi
+          if [ "$MODE" = fixture ]; then
+            bun run tests/recap/fixture.ts media/recap-integration
+            bun run src/index.ts generate-recap --movie media/recap-integration/episode.mp4 --episode media/recap-integration/episode.json --work-dir media/recap-integration --seconds 20 --evidence media/recap-integration/evidence.json "${memory_args[@]}" 2>&1 | tee media/recap-integration/run.log
+          else
+            test -n "$VIDEO_URL" || { echo 'video_url is required'; exit 1; }
+            bun -e 'await Bun.write("media/recap-integration/episode.json", JSON.stringify(JSON.parse(process.env.EPISODE_JSON)))'
+            bun run src/index.ts generate-recap --movie "$VIDEO_URL" --episode media/recap-integration/episode.json --work-dir media/recap-integration --seconds "$TARGET_SECONDS" "${memory_args[@]}" 2>&1 | tee media/recap-integration/run.log
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: recap-turbo-integration
+          path: |
+            media/recap-integration/*.json
+            media/recap-integration/*.mp4
+            media/recap-integration/*.ass
+            media/recap-integration/*.log
+            media/recap-integration/audio

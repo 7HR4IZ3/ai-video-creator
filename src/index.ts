@@ -10,7 +10,6 @@ import { CWD } from "./constants";
 import { generateAudio } from "./audio";
 import { grabStories } from "./sources/reddit";
 import { createRankingVideo, generateRankingNarration } from "./sources/ranking";
-import { createMovieRecap } from "./sources/movie";
 import { createUploadableVideo } from "./video";
 import { grabGameplayVideo } from "./scrapers";
 import { exists } from "fs/promises";
@@ -655,88 +654,26 @@ program
 // ==========================================
 program
   .command("generate-recap")
-  .requiredOption("--movie <string>", "path to movie file")
-  .requiredOption("--title <string>", "movie title")
-  .option("--max-clips <number>", "maximum clips to extract", "5")
-  .option("--skip-upload", "skip upload")
-  .option(
-    "--platforms <string>",
-    "upload platforms (youtube, tiktok, filesystem)",
-    "youtube",
-  )
-  .option("--privacy <string>", "privacy setting", "private")
-  .description("Generate a movie recap video")
-  .action(
-    async (options: {
-      movie: string;
-      title: string;
-      maxClips?: string;
-      skipUpload?: boolean;
-      platforms?: string;
-      privacy?: string;
-    }) => {
-      await initializeDirectories();
-
-      console.log(`[🎬] Starting movie recap for: ${options.title}`);
-
-      // Check if movie file exists
-      if (!(await exists(options.movie))) {
-        console.error(`[❌] Movie file not found: ${options.movie}`);
-        process.exit(1);
-      }
-
-      try {
-        // Create recap
-        const recap = await createMovieRecap(
-          options.movie,
-          options.title,
-          parseInt(options.maxClips || "5"),
-        );
-
-        console.log(`[📊] Extracted ${recap.clips.length} clips`);
-
-        // Create story-like object for audio generation
-        const storyLike = {
-          id: recap.id,
-          name: recap.id,
-          title: `${options.title} - Quick Recap`,
-          body: recap.narration,
-          url: "",
-          author: { name: "AI" },
-        };
-
-        // Generate audio from narration
-        console.log("[🎶] Generating narration audio...");
-        const audio = await generateAudio(storyLike as RedditStory);
-
-        // TODO: Stitch extracted clips together
-        // For now, use first extracted clip or gameplay as placeholder
-        console.log("[🎬] Generating final video...");
-        const video = await grabGameplayVideo();
-        const final = await createUploadableVideo(audio, video, {
-          story: storyLike as RedditStory,
-        });
-
-        console.log("[✅] Movie recap generated!");
-
-        // Upload if not skipped
-        if (!options.skipUpload && options.platforms) {
-          for (const platform of options.platforms.split(",")) {
-            console.log(`[🚀] Uploading to ${platform}...`);
-            await uploadVideo(
-              platform.trim() as UploadPlatform,
-              final,
-              `${options.title} - Quick Recap`,
-              `Movie recap of ${options.title}`,
-              options.privacy,
-            );
-          }
-        }
-      } catch (error) {
-        console.error("[❌] Error generating movie recap:", error);
-        process.exit(1);
-      }
-    },
-  );
+  .requiredOption("--movie <file-or-url>", "exact episode video")
+  .requiredOption("--episode <json>", "show and ordered episode metadata")
+  .requiredOption("--work-dir <directory>", "episode artifacts and output")
+  .option("--seconds <number>", "target recap duration", "300")
+  .option("--voice <model>", "local narrator", "chatterbox-turbo")
+  .option("--evidence <json>", "verified timestamped evidence instead of video analysis")
+  .option("--subtitles <srt>", "subtitles matching the source edition")
+  .option("--memory <json>", "versioned show memory bundle")
+  .option("--inserts <json>", "explicit original-dialogue inserts")
+  .description("Create an evidence-backed episode recap with Turbo and aligned captions")
+  .action(async (options) => {
+    const { spawn } = await import("node:child_process");
+    const args = ["run", path.resolve(__dirname, "recap/cli.ts"), "all", "--video", options.movie,
+      "--episode", options.episode, "--work-dir", options.workDir, "--seconds", options.seconds, "--voice", options.voice];
+    for (const key of ["evidence", "subtitles", "memory", "inserts"]) if (options[key]) args.push(`--${key}`, options[key]);
+    await new Promise<void>((resolve, reject) => {
+      const child = spawn(process.execPath, args, { stdio: "inherit" });
+      child.on("error", reject);
+      child.on("close", code => code === 0 ? resolve() : reject(new Error(`Episode recap failed (${code})`)));
+    });
+  });
 
 await program.parseAsync().catch(error => { console.error(`[Error] ${error.message}`); process.exitCode = 1; });
