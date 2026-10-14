@@ -125,7 +125,8 @@ jobs:
         env:
           STORY_ENV: ${{ secrets.ENV_FILE }}
           DIRECT_GOOGLE_KEY: ${{ secrets.GOOGLE_API_KEY }}
-        run: bun -e 'await Bun.write(".env", (process.env.STORY_ENV || "") + (process.env.DIRECT_GOOGLE_KEY ? "\nGOOGLE_API_KEY=" + JSON.stringify(process.env.DIRECT_GOOGLE_KEY) + "\n" : ""))'
+        run: |
+          bun -e 'await Bun.write(".env", (process.env.STORY_ENV || "") + (process.env.DIRECT_GOOGLE_KEY ? "\nGOOGLE_API_KEY=" + JSON.stringify(process.env.DIRECT_GOOGLE_KEY) + "\n" : ""))'
       - name: Fetch a pinned approved memory bundle
         if: inputs.memory_url != ''
         run: |
