@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       voice:
-        description: Voice model to audition, or all four independently
+        description: Voice to audition, all four, or none for editor-only
         type: choice
         default: all
-        options: [all, qwen3-custom, chatterbox-nano, chatterbox-turbo, kokoro]
+        options: [all, none, qwen3-custom, chatterbox-nano, chatterbox-turbo, kokoro]
       run_editor:
         description: Also test the OpenCode story editor independently
         type: boolean
@@ -67,6 +67,7 @@ jobs:
           retention-days: 14
 
   voice:
+    if: ${{ inputs.voice != 'none' }}
     name: Voice ${{ matrix.model }}
     runs-on: ubuntu-latest
     timeout-minutes: 120

@@ -10,7 +10,7 @@ The default story provider is OpenCode. No provider substitution happens automat
 
 ## GitHub Actions
 
-Open **Actions → Story and voice auditions → Run workflow**. Select all voices or one candidate. The editor checkbox is independent of the voice selection.
+Open **Actions → Story and voice auditions → Run workflow**. Select all voices or one candidate. Select `none` to test only the editor. The editor checkbox is independent of the voice selection.
 
 Each voice runs as its own matrix job, with its own environment, dependencies, weights cache, and artifact. `fail-fast` is false and no jobs use `needs`. A failed editor or voice therefore does not block any other voice. Every voice reads `tests/story/fixtures/production.json` directly. It does not call Reddit, OpenCode, another voice, or an upload provider.
 
@@ -36,7 +36,10 @@ Choose another supported OpenCode model explicitly:
 bun run src/story/cli.ts --source tests/story/fixtures/source.json --model opencode/muse-spark-1.3-contributor-free
 ```
 
-OpenCode 2.0.29 is the tested installed version. The adapter invokes the real CLI with JSONL output, supplies source through stdin, and uses an isolated directory with a text-only agent. It reports error events and timeouts. On 2026-10-14 the model appeared in the live catalog but an actual CLI call returned HTTP 403, "OpenCode's free tier can only be used from within OpenCode." This is unresolved access behavior, not successful inference. The independent editor CI job tests whether the hosted runner behaves differently. Do not forge client identity or silently replace the model. [Official CLI](https://dev.opencode.ai/v2/docs/cli/commands/), [model catalog](https://dev.opencode.ai/v2/docs/console/models/)
+OpenCode 2.0.29 is the tested installed version. The adapter invokes the real CLI with JSONL output, supplies source through stdin, and uses an isolated directory. It keeps the native system prompt and tools. Side-effecting tools require approval, and noninteractive `opencode run` rejects permission requests by default; the adapter never passes `--auto`.
+
+The original adapter overrode the native system prompt, denied all tools, and forced a single step. That configuration returned a misleading HTTP 403, "OpenCode's free tier can only be used from within OpenCode," even though the same model worked in a normal CLI call. Selectively denying shell also reproduced the rejection. Keeping native tools available with `ask` permissions fixes the request contract without approving tool execution. This matches an upstream report about restricted agents. The live editor CI job exercises the full draft-and-review flow separately from voice jobs. [Official CLI](https://dev.opencode.ai/v2/docs/cli/commands/), [upstream restricted-agent issue](https://github.com/anomalyco/opencode/issues/54882)
+
 
 An explicit OpenRouter alternative remains available, requiring its own valid key and credits:
 
