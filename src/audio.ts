@@ -105,12 +105,12 @@ function generateAudioLocal(story: RedditStory, narration: string, useDia?: bool
   });
 }
 
-export async function generateAudio(story: RedditStory, useDia?: boolean) {
+export async function generateAudio(story: RedditStory, useDia?: boolean, options: { targetSeconds?: number; voiceModel?: string } = {}) {
   await fs.promises.mkdir(AUDIO_DIR, { recursive: true });
-  const production = await editStory(story);
+  const production = await editStory(story, { targetSeconds: options.targetSeconds });
   const generator = process.env.AUDIO_GENERATOR || "local";
   if (generator === "local" && !useDia) {
-    const result = await synthesizeStory(production);
+    const result = await synthesizeStory(production, { model: options.voiceModel });
     return readAsReadable({ filePath: result.output });
   }
   const outputPath = path.join(AUDIO_DIR, `${story.name}.mp3`);

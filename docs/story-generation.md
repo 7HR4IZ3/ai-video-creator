@@ -72,3 +72,21 @@ Research and source links are in [local-voice-research.md](local-voice-research.
 Run **Expressive voice comparison** to have Muse Spark generate one shared original performance script of 450–600 words. It covers warmth, joy, amusement, whispered suspense, rising alarm, controlled anger, sadness, reassurance, sarcasm, and relief. The script is validated before four parallel voice jobs consume it. These jobs depend on the shared script only, never on another voice job; one failed voice does not cancel the rest. The shorter **Story and voice auditions** workflow remains available without an AI prerequisite.
 
 Every voice artifact includes the common script and performance notes, the actual generation profile, a full MP3, individual scene WAVs, timings, and runtime logs. Profiles live in `config/voice-profiles.json`. Turbo/Nano receive only supported sampling controls and optional native chuckle/laugh/sigh tags. Qwen receives explicit per-scene delivery instructions. Kokoro receives a preset voice and rate; unsupported emotion controls are not simulated. The profiles are audition candidates, not proven optimal settings.
+
+## Production story videos
+
+The normal CLI now runs the complete source → editorial review → Turbo narration → forced alignment → FFmpeg video pipeline:
+
+```sh
+bun run src/index.ts generate --source tests/story/fixtures/source.json --background media/videos/minecraft.mp4 --seconds 75 --voice chatterbox-turbo --skip-upload
+```
+
+Use `--subreddit AITAH --limit 1` instead of `--source` to retrieve Reddit candidates. Reddit credentials are needed only for that source. Candidates come from discussed weekly posts, with deterministic ordering and duplicate removal; discussion counts are a selection signal, not proof that a story will retain viewers. Raw source JSON remains in `media/scripts`, editorial evidence in `media/narrations`, and voice evidence in `media/audios`.
+
+Narration runs in `TTS_PYTHON`; alignment runs in `RENDER_PYTHON`. The latter uses the separate Linux/Python 3.11 lockfile `requirements/story/render.txt`. FFmpeg must include libass/subtitles. On this Mac, development verification uses `/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg` and matching ffprobe through `FFMPEG_BIN` and `FFPROBE_BIN`. The legacy MoviePy editor is retained for older commands but is no longer the Reddit video's rendering path.
+
+Alignment estimates word times for the exact approved text instead of generating another transcript. Text changes, invalid/overlapping times, excessive zero-duration words, or implausibly long words fail validation. Captions group short phrases at punctuation and real pauses, with space reserved for platform UI. A brief title replaces the large screenshot that previously covered the opening. Rendered videos are 1080×1920 H.264/AAC at thirty frames per second. Footage loops when shorter than the recording. Upscaling does not improve the detail of low-resolution source footage.
+
+The renderer saves `.alignment.json`, `.captions.json`, `.ass`, and `.manifest.json` beside the video. Its cache includes the approved text, narration hash, background identity, and rendering version. Background changes therefore invalidate the old video even when the voice stays the same. Narration duration determines video length; `--seconds` is a script target, not time stretching or a guarantee of exact length.
+
+**Generate Social Video** now uses the actual CLI with separate voice/alignment environments. Manual fixture mode runs without Reddit or upload credentials and uses a visible test pattern if no background URL is supplied. Give it real footage to evaluate the visual result. Scheduled runs use Reddit and require `ENV_FILE` credentials plus a direct footage URL in the repository variable `BACKGROUND_VIDEO_URL`. The workflow uploads production artifacts and does not publish videos. Upload commands remain separate. Live Reddit retrieval and platform publication require their own verification.

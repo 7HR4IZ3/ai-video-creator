@@ -45,33 +45,17 @@ const SUBREDDITS = {
   til: ["todayilearned"],
 };
 
-async function generate(story: RedditStory, skipVideo = false, useDia = false) {
-  let audio;
-
+async function generate(story: RedditStory, skipVideo = false, useDia = false,
+  settings: { background?: string; seconds?: number; voice?: string } = {}) {
+  if (settings.voice && !["chatterbox-turbo", "chatterbox-nano", "qwen3-custom", "kokoro"].includes(settings.voice)) throw new Error("Unsupported local voice model.");
+  if (settings.seconds !== undefined && (!Number.isFinite(settings.seconds) || settings.seconds < 30 || settings.seconds > 180)) throw new Error("Target duration must be thirty to one hundred eighty seconds.");
   console.log(`[GENERATING]: Story: ${story.title} (${story.name})`);
-
-  const audioPath = path.join(CWD, "media/audios", `${story.name}.mp3`);
-  const videoPath = path.join(CWD, "media/outputs", `${story.name}.mp4`);
-  const outputPath = path.join(CWD, "media/outputs", `${story.name}.mp4`);
-
-  audio = await generateAudio(story, useDia);
+  const video = !skipVideo ? await grabGameplayVideo(settings.background) : undefined;
+  const audio = await generateAudio(story, useDia, { targetSeconds: settings.seconds, voiceModel: settings.voice });
   if (skipVideo) return { audio, video: audio, final: audio };
-  const audioManifest = await readFile(`${audioPath}.manifest.json`, "utf8");
-  const recipe = JSON.stringify({ audioManifest, renderer: "ffmpeg", editor: "story-video-v2" });
-  try {
-    if (await exists(outputPath) && await readFile(`${outputPath}.manifest.json`, "utf8") === recipe) {
-      const final = await readAsReadable({ filePath: outputPath });
-      return { audio, video: final, final };
-    }
-  } catch {}
-
-  console.log(`[🎬]: Generating video`);
-  const video = await grabGameplayVideo();
-  const final = await createUploadableVideo(audio, video, { story });
-  console.log(`[✅]: Generated video at ${outputPath} \n\n`);
-
-  await import("node:fs/promises").then(fs => fs.writeFile(`${outputPath}.manifest.json`, recipe));
-  return { audio, video, final };
+  const final = await createUploadableVideo(audio, video!, { story });
+  console.log(`[✅]: Generated video at ${final.src}`);
+  return { audio, video: video!, final };
 }
 
 async function uploadToDestination(
@@ -111,11 +95,15 @@ program
   .command("generate")
   .option("-s, --story <string>", "story")
   .option("--story-id <string>", "specific story ID to generate")
+  .option("--source <file>", "generate from local story JSON without fetching Reddit")
+  .option("--background <file>", "background footage to crop and loop")
+  .option("--seconds <number>", "target narration duration", "75")
+  .option("--voice <model>", "local voice model", "chatterbox-turbo")
   .option("--subreddit <string>", "subreddit to fetch stories from")
   .option("-c, --concurrent <number>", "concurrent")
   .option("-r, --reddit <string>", "reddit")
   .option("--mode <string>", "mode")
-  .option("--limit <number>", "limit")
+  .option("--limit <number>", "number of stories to generate", "1")
   .option("--skip-upload", "skip upload")
   .option("--skip-video", "skip video")
   .option("--use-dia", "use Dia model for audio generation") // Added --use-dia option
@@ -134,6 +122,10 @@ program
     async (options: {
       story?: string;
       storyId?: string;
+      source?: string;
+      background?: string;
+      seconds?: string;
+      voice?: string;
       subreddit?: string;
       concurrent?: number;
       limit?: number;
@@ -168,17 +160,13 @@ program
         }
       }
 
-      if (options.story) {
-        const storyPath = path.join(
-          CWD,
-          "media/scripts",
-          `${options.story}.json`,
-        );
+      if (options.story || options.source) {
+        const storyPath = options.source ? path.resolve(options.source) : path.join(CWD, "media/scripts", `${options.story}.json`);
         const story: RedditStory = await readFile(storyPath, "utf-8").then(
           JSON.parse,
         );
 
-        const output = await generate(story, options.skipVideo, options.useDia); // Pass useDia to generate function
+        const output = await generate(story, options.skipVideo, options.useDia, { background: options.background, seconds: Number(options.seconds), voice: options.voice }); // Pass useDia to generate function
 
         if (!options.skipUpload && !options.skipVideo && platforms) {
           for (const platform of platforms.split(",")) {
@@ -195,21 +183,8 @@ program
       } else {
         const queue = new AsyncQueue();
 
-        // Determine which subreddit to use
-        let subredditKey = "aita";
-        if (options.subreddit) {
-          // Map subreddit names to SUBREDDITS keys
-          const subredditMap: { [key: string]: keyof typeof SUBREDDITS } = {
-            stories: "stories",
-            AITAH: "aita",
-            todayilearned: "til",
-          };
-          subredditKey = subredditMap[options.subreddit] || "aita";
-        }
-
-        const stories = await grabStories(
-          SUBREDDITS[subredditKey as keyof typeof SUBREDDITS],
-        );
+        const subreddits = options.subreddit ? options.subreddit.split(",").map(name => name.trim()).filter(Boolean) : SUBREDDITS.aita;
+        const stories = await grabStories(subreddits);
 
         // If a specific story ID is provided, find that story
         let storiesToProcess = stories;
@@ -225,12 +200,15 @@ program
           }
         }
 
-        for (const story of storiesToProcess.slice(0, options.limit ?? 6)) {
+        const limit = Number(options.limit ?? 1);
+        if (!Number.isInteger(limit) || limit < 1 || limit > 30) throw new Error("Story limit must be between one and thirty.");
+        for (const story of storiesToProcess.slice(0, limit)) {
           queue.add(async () => {
             const output = await generate(
               story,
               options.skipVideo,
               options.useDia,
+              { background: options.background, seconds: Number(options.seconds), voice: options.voice },
             ); // Pass useDia to generate function
 
             if (!options.skipUpload && !options.skipVideo && platforms) {
@@ -246,7 +224,7 @@ program
             return output;
           });
         }
-        await queue.run({ concurrency: options.concurrent ?? 2 });
+        await queue.run({ concurrency: Number(options.concurrent ?? 1) });
       }
     },
   );
@@ -395,7 +373,7 @@ program
 
           // Explicitly type the result of uploadQueue.run
           const allUploadResults = await uploadQueue.run({
-            concurrency: options.concurrent ?? 2,
+            concurrency: Number(options.concurrent ?? 1),
           }); // Assuming run might return undefined for failed/empty tasks
 
           console.log("\n[📊]: Overall Upload Summary");
@@ -761,4 +739,4 @@ program
     },
   );
 
-program.parse();
+await program.parseAsync().catch(error => { console.error(`[Error] ${error.message}`); process.exitCode = 1; });

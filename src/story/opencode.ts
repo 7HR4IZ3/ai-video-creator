@@ -25,7 +25,7 @@ export function parseOpenCodeEvents(output: string): string {
 }
 
 /** Use the actual OpenCode client, never emulate its client identity at an inference endpoint. */
-export async function generateWithOpenCode(prompt: string, model = DEFAULT_STORY_MODEL, timeoutMs = 180_000): Promise<string> {
+async function runOpenCode(prompt: string, model: string, timeoutMs: number): Promise<string> {
   const directory = await mkdtemp(path.join(tmpdir(), "video-story-"));
   try {
     // Preserve native agent behavior; noninteractive run rejects tool approval requests.
@@ -80,5 +80,16 @@ export async function generateWithOpenCode(prompt: string, model = DEFAULT_STORY
     return output;
   } finally {
     await rm(directory, { recursive: true, force: true });
+  }
+}
+
+export async function generateWithOpenCode(prompt: string, model = DEFAULT_STORY_MODEL, timeoutMs = 180_000): Promise<string> {
+  try { return await runOpenCode(prompt, model, timeoutMs); }
+  catch (error) {
+    // Retry this intermittently reported eligibility error once, using the same native client.
+    if (!(error instanceof Error) || !error.message.includes("OpenCode's free tier can only be used from within OpenCode")) throw error;
+    console.warn("[OpenCode] Native client received a free-tier eligibility error; retrying the same request once in five seconds.");
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    return runOpenCode(prompt, model, timeoutMs);
   }
 }

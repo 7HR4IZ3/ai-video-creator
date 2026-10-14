@@ -1,5 +1,16 @@
 # Video Creator
 
+## Current story generation
+
+The Reddit pipeline now uses OpenCode/Muse for reviewed narration, Chatterbox Turbo by default, and a 1080×1920 FFmpeg renderer with captions aligned to the approved script. See [the current setup, commands, and CI workflows](docs/story-generation.md).
+
+```sh
+bun run src/index.ts generate --source tests/story/fixtures/source.json --background media/videos/minecraft.mp4 --voice chatterbox-turbo --skip-upload
+```
+
+Use **Generate Social Video** for a full pipeline check and **Expressive voice comparison** for the longer narrator audition. The older feature descriptions below include incomplete web features; the linked guide records current verified behavior.
+
+
 A powerful tool to automatically generate and publish engaging social media videos from Reddit stories. This project includes a command-line interface (CLI) for core functionality, a web interface for user-friendly operation, and a dedicated server to handle secure OAuth authentication for video uploads.
 
 ## Features

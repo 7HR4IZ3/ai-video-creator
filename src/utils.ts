@@ -11,6 +11,7 @@ export class AsyncQueue<T> {
 
   async run(config: { concurrency: number }): Promise<T[]> {
     const { concurrency } = config;
+    if (!Number.isInteger(concurrency) || concurrency < 1) throw new Error("Concurrency must be a positive integer.");
     const queue = [...this.queue];
     let runResults: T[] = [];
 
@@ -61,6 +62,8 @@ export async function readAsReadable({
       const firstFile = files.filter((file) => file.endsWith(".mp4"))[0];
       filePath = path.join(directoryPath, firstFile);
     }
+
+    if (!(await fs.promises.stat(filePath as string)).isFile()) throw new Error("Media path must point to a file.");
 
     // Create a readable stream for the first file
     const readableStream = fs.createReadStream(filePath as string);
