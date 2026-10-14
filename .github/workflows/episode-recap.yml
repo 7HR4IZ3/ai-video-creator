@@ -68,7 +68,7 @@ jobs:
           version: 0.7.14
           enable-cache: true
       - run: sudo apt-get update && sudo apt-get install -y ffmpeg espeak-ng fonts-dejavu-core
-      - run: uv venv --python 3.11 .render-venv && uv pip sync --python .render-venv/bin/python requirements/story/render.txt
+      - run: uv venv --python 3.11 .render-venv && uv pip sync --python .render-venv/bin/python --extra-index-url https://download.pytorch.org/whl/cpu requirements/story/render.txt
       - uses: actions/cache@v4
         with:
           path: .cache/huggingface
@@ -94,7 +94,6 @@ jobs:
       VIDEO_URL: ${{ inputs.video_url }}
       EPISODE_JSON: ${{ inputs.episode_json }}
       TARGET_SECONDS: ${{ inputs.seconds }}
-      GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
       MEMORY_URL: ${{ inputs.memory_url }}
       MEMORY_SHA256: ${{ inputs.memory_sha256 }}
     steps:
@@ -115,9 +114,9 @@ jobs:
       - name: Install separate narration and alignment environments
         run: |
           uv venv --python 3.11 .voice-venv
-          uv pip sync --python .voice-venv/bin/python requirements/story/chatterbox.txt
+          uv pip sync --python .voice-venv/bin/python --extra-index-url https://download.pytorch.org/whl/cpu requirements/story/chatterbox.txt
           uv venv --python 3.11 .render-venv
-          uv pip sync --python .render-venv/bin/python requirements/story/render.txt
+          uv pip sync --python .render-venv/bin/python --extra-index-url https://download.pytorch.org/whl/cpu requirements/story/render.txt
       - uses: actions/cache@v4
         with:
           path: .cache/huggingface
@@ -125,7 +124,8 @@ jobs:
       - name: Configure existing credentials privately
         env:
           STORY_ENV: ${{ secrets.ENV_FILE }}
-        run: bun -e 'await Bun.write(".env", process.env.STORY_ENV || "")'
+          DIRECT_GOOGLE_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        run: bun -e 'await Bun.write(".env", (process.env.STORY_ENV || "") + (process.env.DIRECT_GOOGLE_KEY ? "\nGOOGLE_API_KEY=" + JSON.stringify(process.env.DIRECT_GOOGLE_KEY) + "\n" : ""))'
       - name: Fetch a pinned approved memory bundle
         if: inputs.memory_url != ''
         run: |

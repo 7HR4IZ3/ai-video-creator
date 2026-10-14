@@ -16,11 +16,14 @@ export function assert(ok: unknown, message: string): asserts ok { if (!ok) thro
 export function safeId(value: unknown): value is string { return typeof value === 'string' && /^[a-zA-Z0-9_-]{1,100}$/.test(value); }
 export function strings(value: unknown): value is string[] { return Array.isArray(value) && value.every(x => typeof x === 'string' && x.length > 0); }
 export function episode(value: any): asserts value is Episode {
+  assert(value && Object.keys(value).every(key=>['showId','id','order','continuity','title'].includes(key)), 'Unknown episode metadata field');
   assert(value && safeId(value.showId) && safeId(value.id) && safeId(value.continuity), 'Episode requires safe showId, id, continuity');
   assert(Number.isInteger(value.order) && value.order >= 0 && typeof value.title === 'string' && value.title.trim(), 'Episode requires nonnegative integer order and title');
 }
+export function sameEpisode(a: Episode,b: Episode) { return a && b && (['showId','id','order','continuity','title'] as const).every(key=>a[key]===b[key]); }
 export function validateAnalysis(a: any, source: Source): asserts a is Analysis {
-  assert(a?.version === VERSION && a.sourceHash === source.sourceHash && JSON.stringify(a.episode) === JSON.stringify(source.episode), 'Analysis belongs to a different source or episode');
+  episode(source.episode); episode(a?.episode);
+  assert(a?.version === VERSION && a.sourceHash === source.sourceHash && sameEpisode(a.episode,source.episode), 'Analysis belongs to a different source or episode');
   assert(Number.isFinite(a.duration) && Math.abs(a.duration - source.duration) < .3, 'Analysis duration differs from source');
   assert(Array.isArray(a.evidence) && a.evidence.length > 0 && Array.isArray(a.events) && a.events.length > 0 && strings(a.warnings), 'Analysis needs evidence, events, warnings');
   const ids = new Set<string>();

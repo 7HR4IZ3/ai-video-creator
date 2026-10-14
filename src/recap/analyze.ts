@@ -53,5 +53,5 @@ export async function analyze(source: Source, directory: string, options: { evid
   const unique = events.filter(e => { const key=e.description.toLowerCase().replace(/\W/g,''); const prior=seen.get(key); if(prior) { replacement.set(e.id,prior); return false; } seen.set(key,e.id); return true; });
   for(const event of unique) event.requires=[...new Set(event.requires.map(id=>replacement.get(id)||id))].filter(id=>id!==event.id);
   const analysis: Analysis = {version:VERSION,sourceHash:source.sourceHash,episode:source.episode,duration:source.duration,evidence,events:unique,warnings:[...new Set(warnings)]};
-  validateAnalysis(analysis,source); await save(path.join(directory,'analysis-cache.json'),{fingerprint,analysis}); await save(path.join(directory,'analysis.json'),analysis); return analysis;
+  validateAnalysis(analysis,source); await save(path.join(directory,'analysis-run.json'),{version:VERSION,model,sourceHash:source.sourceHash,fingerprint,transcriptOrigin:transcript.origin,createdAt:new Date().toISOString()}); await save(path.join(directory,'analysis-cache.json'),{fingerprint,analysis}); await save(path.join(directory,'analysis.json'),analysis); return analysis;
 }
