@@ -6,7 +6,7 @@ import path from "node:path";
 export const DEFAULT_STORY_MODEL = "opencode/muse-spark-1.3-contributor-free";
 
 export function parseOpenCodeEvents(output: string): string {
-  const text: string[] = [];
+  const messages = new Map<string, string[]>();
   for (const line of output.split(/\r?\n/)) {
     if (!line.trim()) continue;
     let event: any;
@@ -15,14 +15,17 @@ export function parseOpenCodeEvents(output: string): string {
     if (event.type === "error") {
       throw new Error(`OpenCode: ${event.error?.message || JSON.stringify(event.error)}`);
     }
-    if (event.type === "text" && typeof event.part?.text === "string") text.push(event.part.text);
+    if (event.type === "text" && typeof event.part?.text === "string") {
+      const id = event.part.messageID || "response";
+      messages.set(id, [...(messages.get(id) || []), event.part.text]);
+    }
   }
-  if (!text.length) throw new Error("OpenCode returned no narration text.");
-  return text.join("\n");
+  if (!messages.size) throw new Error("OpenCode returned no narration text.");
+  return [...messages.values()].at(-1)!.join("\n");
 }
 
 /** Use the actual OpenCode client, never emulate its client identity at an inference endpoint. */
-export async function generateWithOpenCode(prompt: string, model = DEFAULT_STORY_MODEL): Promise<string> {
+export async function generateWithOpenCode(prompt: string, model = DEFAULT_STORY_MODEL, timeoutMs = 180_000): Promise<string> {
   const directory = await mkdtemp(path.join(tmpdir(), "video-story-"));
   try {
     // Preserve native agent behavior; noninteractive run rejects tool approval requests.
@@ -52,8 +55,8 @@ export async function generateWithOpenCode(prompt: string, model = DEFAULT_STORY
       let stderr = "";
       const timer = setTimeout(() => {
         proc.kill("SIGKILL");
-        reject(new Error("OpenCode story request timed out after 180 seconds."));
-      }, 180_000);
+        reject(new Error(`OpenCode story request timed out after ${timeoutMs / 1000} seconds.`));
+      }, timeoutMs);
       proc.stdout.on("data", chunk => {
         stdout += chunk;
         if (stdout.length > 2_000_000) {

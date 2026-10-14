@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { editStory, validateDraft, type StoryDraft } from "../../src/story/editor";
+import { editStory, validateDraft, parseJsonResponse, type StoryDraft } from "../../src/story/editor";
 import { parseOpenCodeEvents } from "../../src/story/opencode";
 import source from "./fixtures/source.json";
 
@@ -54,4 +54,11 @@ describe("story production", () => {
     await expect(editStory({ ...source, name: "../escape" })).rejects.toThrow("safe name");
     await expect(editStory(source, { targetSeconds: NaN })).rejects.toThrow("duration");
   });
+});
+
+test("native agent commentary is separated from its final JSON fixture", () => {
+  const events = [{type:"text",part:{messageID:"planning",text:"Fixing the fixture."}}, {type:"text",part:{messageID:"final",text:'{"text":"a } brace"}'}}];
+  expect(parseOpenCodeEvents(events.map(e=>JSON.stringify(e)).join("\n"))).toBe('{"text":"a } brace"}');
+  expect(parseJsonResponse('Here is the fixture:\n```json\n{"text":"a } brace"}\n```')).toEqual({text:"a } brace"});
+  expect(() => parseJsonResponse('{"first":1} {"second":2}')).toThrow("one complete JSON");
 });

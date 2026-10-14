@@ -48,8 +48,31 @@ export function storyFingerprint(story: RedditStory, seconds: number, provider: 
   return createHash("sha256").update(JSON.stringify({ version: EDITOR_VERSION, story, seconds, provider, model })).digest("hex");
 }
 export function parseJsonResponse(text: string): any {
-  return JSON.parse(text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, ""));
+  const cleaned = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  try { return JSON.parse(cleaned); } catch {}
+  // Native coding agents may put a short explanation before a fenced fixture.
+  // Scan balanced objects without treating braces inside JSON strings as structure.
+  let depth = 0, start = -1, quoted = false, escaped = false;
+  const candidates: unknown[] = [];
+  for (let i = 0; i < cleaned.length; i++) {
+    const c = cleaned[i];
+    if (depth === 0) { if (c === "{") { start = i; depth = 1; quoted = false; } continue; }
+    if (quoted) {
+      if (escaped) escaped = false;
+      else if (c === "\\") escaped = true;
+      else if (c === '\"') quoted = false;
+      continue;
+    }
+    if (c === '\"') quoted = true;
+    else if (c === "{") depth++;
+    else if (c === "}" && --depth === 0) {
+      try { candidates.push(JSON.parse(cleaned.slice(start, i + 1))); } catch {}
+    }
+  }
+  if (candidates.length === 1) return candidates[0];
+  throw new Error("Expected one complete JSON response from the editor.");
 }
+
 export function narrationText(draft: StoryDraft) { return draft.beats.map(beat => beat.text.trim()).join("\n\n"); }
 export function countWords(text: string) { return text.trim().split(/\s+/).filter(Boolean).length; }
 
