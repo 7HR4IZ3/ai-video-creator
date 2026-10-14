@@ -2,9 +2,15 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, rename, stat, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import path from "node:path";
-import type { StoryProduction } from "./editor";
+/** Minimal shared contract used by story and episode narration. */
+export interface VoiceProduction {
+  version?: string;
+  source: { name: string };
+  draft: { title: string; beats: Array<{ role: string; text: string; direction: string; pauseAfterMs: number; cue?: string }> };
+  narration?: string;
+}
 
-export async function synthesizeStory(production: StoryProduction, options: { output?: string; model?: string } = {}) {
+export async function synthesizeStory(production: VoiceProduction, options: { output?: string; model?: string } = {}) {
   const model = options.model || process.env.LOCAL_TTS_MODEL || "chatterbox-turbo";
   if (!["qwen3-custom", "kokoro", "chatterbox-nano", "chatterbox-turbo"].includes(model)) throw new Error("LOCAL_TTS_MODEL must be qwen3-custom, kokoro, chatterbox-nano, or chatterbox-turbo.");
   const output = path.resolve(options.output || `media/audios/${production.source.name}.mp3`);
