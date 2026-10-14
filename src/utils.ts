@@ -30,9 +30,8 @@ export class AsyncQueue<T> {
 
 export async function initializeDirectories() {
   try {
-    // Ensure screenshots directory exists
-    if (!fs.existsSync(SCREENSHOT_DIR)) {
-      fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
+    for (const directory of ["media/scripts", "media/audios", "media/videos", "media/outputs", "media/subtitles", "media/screenshots", "media/narrations", "temp"]) {
+      fs.mkdirSync(path.resolve(directory), { recursive: true });
     }
   } catch (error) {
     console.error("Error initializing directories:", error);

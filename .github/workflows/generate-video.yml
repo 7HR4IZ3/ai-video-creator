@@ -9,6 +9,10 @@ on:
 jobs:
   generate:
     runs-on: ubuntu-latest
+    # Keep the existing production voice/provider while the independent auditions run.
+    env:
+      STORY_AI_PROVIDER: openrouter
+      LOCAL_TTS_MODEL: kokoro
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

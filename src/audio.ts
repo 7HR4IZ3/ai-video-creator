@@ -1,37 +1,35 @@
 import fs from "node:fs";
 import path from "node:path";
 import { Readable } from "node:stream";
-import { exec, spawn } from "node:child_process";
+import { spawn } from "node:child_process";
 
 import { readAsReadable } from "./utils";
 import { AUDIO_DIR, CWD } from "./constants";
-import { elevenlabs, openai, zyphra, processTextWithAI } from "./ai";
+import { getElevenLabs, getOpenAI, getZyphra } from "./ai";
+import { editStory } from "./story/editor";
+import { synthesizeStory } from "./story/voice";
+import { createHash } from "node:crypto";
+import { pipeline } from "node:stream/promises";
 
 import type { RedditStory, StreamSrc } from "./types";
 
-// Use the new Vercel AI SDK function for text processing
-async function processText(title: string, story: string) {
-  return await processTextWithAI(title, story);
-}
-
-async function generateAudioElevenLabs(story: RedditStory) {
+async function generateAudioElevenLabs(story: RedditStory, narration: string) {
   const AUDIO_SRC = path.join(AUDIO_DIR, `${story.name}.mp3`);
-  const audio = await elevenlabs.textToSpeech.convert("cjVigY5qzO86Huf0OWal", {
-    text: await processText(story.title, story.body),
+  const audio = await getElevenLabs().textToSpeech.convert("cjVigY5qzO86Huf0OWal", {
+    text: narration,
   });
 
   const stream = fs.createWriteStream(AUDIO_SRC);
-  audio.pipe(stream);
-
-  return { src: AUDIO_SRC, stream: audio };
+  await pipeline(audio, stream);
+  return readAsReadable({ filePath: AUDIO_SRC });
 }
 
-async function generateAudioOpenaAI(story: RedditStory) {
+async function generateAudioOpenaAI(story: RedditStory, narration: string) {
   const AUDIO_SRC = path.join(AUDIO_DIR, `${story.name}.mp3`);
-  const mp3 = await openai.audio.speech.create({
+  const mp3 = await getOpenAI().audio.speech.create({
     model: "tts-1",
     voice: "onyx",
-    input: await processText(story.title, story.body),
+    input: narration,
   });
 
   const buffer = Buffer.from(await mp3.arrayBuffer());
@@ -40,10 +38,10 @@ async function generateAudioOpenaAI(story: RedditStory) {
   return { src: AUDIO_SRC, stream: Readable.from(buffer) };
 }
 
-async function generateAudioZyphra(story: RedditStory) {
+async function generateAudioZyphra(story: RedditStory, narration: string) {
   const AUDIO_SRC = path.join(AUDIO_DIR, `${story.name}.mp3`);
-  const blob = await zyphra.audio.speech.create({
-    text: await processText(story.title, story.body),
+  const blob = await getZyphra().audio.speech.create({
+    text: narration,
     speaking_rate: 15,
     speaker_audio: await fs.promises.readFile(
       path.join(AUDIO_DIR, "eleven.wav"),
@@ -57,10 +55,10 @@ async function generateAudioZyphra(story: RedditStory) {
   return { src: AUDIO_SRC, stream: Readable.from(buffer) };
 }
 
-function generateAudioLocal(story: RedditStory, useDia?: boolean) {
+function generateAudioLocal(story: RedditStory, narration: string, useDia?: boolean) {
   return new Promise<StreamSrc>(async (resolve, reject) => {
     const outputPath = path.join(CWD, "media/audios", `${story.name}.mp3`);
-    const text = await processText(story.title, story.body);
+    const text = narration;
 
     const scriptArgs = [
       path.join(CWD, "utils/main.py"),
@@ -97,6 +95,7 @@ function generateAudioLocal(story: RedditStory, useDia?: boolean) {
 
     proc.on("error", reject);
     proc.on("exit", async (code) => {
+      if (code !== 0) { reject(new Error(`Local Dia exited with code ${code}`)); return; }
       try {
         resolve(await readAsReadable({ filePath: outputPath }));
       } catch {
@@ -107,28 +106,25 @@ function generateAudioLocal(story: RedditStory, useDia?: boolean) {
 }
 
 export async function generateAudio(story: RedditStory, useDia?: boolean) {
-  const outputPath = path.join(CWD, "media/audios", `${story.name}.mp3`);
-  if (await fs.promises.exists(outputPath)) {
-    return await readAsReadable({ filePath: outputPath });
+  await fs.promises.mkdir(AUDIO_DIR, { recursive: true });
+  const production = await editStory(story);
+  const generator = process.env.AUDIO_GENERATOR || "local";
+  if (generator === "local" && !useDia) {
+    const result = await synthesizeStory(production);
+    return readAsReadable({ filePath: result.output });
   }
-
-  if (process.env.AUDIO_GENERATOR === "elevenlabs") {
-    return generateAudioElevenLabs(story);
-  } else if (process.env.AUDIO_GENERATOR === "openai") {
-    return generateAudioOpenaAI(story);
-  } else if (process.env.AUDIO_GENERATOR === "zyphra") {
-    return generateAudioZyphra(story);
-  } else if (process.env.AUDIO_GENERATOR === "local") {
-    return generateAudioLocal(story, useDia); // Pass useDia to local generator
-  } else {
-    // Default or fallback if no generator is specified, could be local without Dia
-    // or throw an error as before. For now, let's assume local if not specified.
-    // Consider if a default behavior or stricter check is needed.
-    // If AUDIO_GENERATOR is undefined or an unknown value, and you want to default to local:
-    // return generateAudioLocal(story, useDia);
-    // Or, to maintain current behavior of throwing error for unconfigured/unknown:
-    throw new Error(
-      `Unsupported or unspecified audio generator: ${process.env.AUDIO_GENERATOR}`,
-    );
-  }
+  const outputPath = path.join(AUDIO_DIR, `${story.name}.mp3`);
+  const fingerprint = createHash("sha256").update(JSON.stringify({ version: "narration-v1", narration: production.narration, generator, useDia })).digest("hex");
+  try {
+    const manifest = JSON.parse(await fs.promises.readFile(`${outputPath}.manifest.json`, "utf8"));
+    if (manifest.fingerprint === fingerprint && (await fs.promises.stat(outputPath)).size > 0) return readAsReadable({ filePath: outputPath });
+  } catch {}
+  let audio: StreamSrc;
+  if (generator === "elevenlabs") audio = await generateAudioElevenLabs(story, production.narration);
+  else if (generator === "openai") audio = await generateAudioOpenaAI(story, production.narration);
+  else if (generator === "zyphra") audio = await generateAudioZyphra(story, production.narration);
+  else if (generator === "local") audio = await generateAudioLocal(story, production.narration, useDia);
+  else throw new Error(`Unsupported audio generator: ${generator}`);
+  await fs.promises.writeFile(`${outputPath}.manifest.json`, JSON.stringify({ fingerprint, generator }));
+  return audio;
 }

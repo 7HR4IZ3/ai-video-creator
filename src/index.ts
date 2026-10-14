@@ -54,44 +54,23 @@ async function generate(story: RedditStory, skipVideo = false, useDia = false) {
   const videoPath = path.join(CWD, "media/outputs", `${story.name}.mp4`);
   const outputPath = path.join(CWD, "media/outputs", `${story.name}.mp4`);
 
-  if (await exists(outputPath)) {
-    console.log(`[SKIPPING]: Story already exists\n\n`);
-    return {
-      audio: await readAsReadable({
-        filePath: audioPath,
-      }),
-      video: await readAsReadable({
-        filePath: videoPath,
-      }),
-      final: await readAsReadable({ filePath: outputPath }),
-    };
-  }
-
-  console.log(`[🎶]: Generating audio`);
-
-  if (await exists(audioPath)) {
-    console.log(`[➡️]: Skipping audio generation`);
-    audio = await readAsReadable({ filePath: audioPath });
-  } else {
-    audio = await generateAudio(story, useDia); // Pass useDia flag
-    console.log(`[✅]: Generated audio`);
-  }
-
-  if (skipVideo) {
-    console.log(`[➡️]: Skipping video generation`);
-
-    return {
-      audio,
-      video: await readAsReadable({ filePath: videoPath }),
-      final: await readAsReadable({ filePath: outputPath }),
-    };
-  }
+  audio = await generateAudio(story, useDia);
+  if (skipVideo) return { audio, video: audio, final: audio };
+  const audioManifest = await readFile(`${audioPath}.manifest.json`, "utf8");
+  const recipe = JSON.stringify({ audioManifest, renderer: "ffmpeg", editor: "story-video-v2" });
+  try {
+    if (await exists(outputPath) && await readFile(`${outputPath}.manifest.json`, "utf8") === recipe) {
+      const final = await readAsReadable({ filePath: outputPath });
+      return { audio, video: final, final };
+    }
+  } catch {}
 
   console.log(`[🎬]: Generating video`);
   const video = await grabGameplayVideo();
   const final = await createUploadableVideo(audio, video, { story });
   console.log(`[✅]: Generated video at ${outputPath} \n\n`);
 
+  await import("node:fs/promises").then(fs => fs.writeFile(`${outputPath}.manifest.json`, recipe));
   return { audio, video, final };
 }
 
@@ -201,7 +180,7 @@ program
 
         const output = await generate(story, options.skipVideo, options.useDia); // Pass useDia to generate function
 
-        if (!options.skipUpload && platforms) {
+        if (!options.skipUpload && !options.skipVideo && platforms) {
           for (const platform of platforms.split(",")) {
             await uploadToDestination(
               platform.trim() as UploadPlatform,
@@ -254,7 +233,7 @@ program
               options.useDia,
             ); // Pass useDia to generate function
 
-            if (!options.skipUpload && platforms) {
+            if (!options.skipUpload && !options.skipVideo && platforms) {
               for (const platform of platforms.split(",")) {
                 await uploadToDestination(
                   platform.trim() as UploadPlatform,

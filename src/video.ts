@@ -24,7 +24,7 @@ export function createUploadableVideo(
       });
 
       const audioPath = audio.src;
-      const videoPath = path.join(CWD, "media/videos", `minecraft.mp4`);
+      const videoPath = video.src;
       const subtitlePath = path.join(
         CWD,
         "media/subtitles",
@@ -61,7 +61,8 @@ export function createUploadableVideo(
 
       proc.on("error", reject);
 
-      proc.on("exit", (message) => {
+      proc.on("exit", (code) => {
+        if (code !== 0) { reject(new Error(`Video editor exited with code ${code}`)); return; }
         resolve(readAsReadable({ filePath: outputPath }));
       });
     } catch (error) {

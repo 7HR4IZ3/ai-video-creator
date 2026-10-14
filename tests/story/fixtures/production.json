@@ -1,0 +1,15 @@
+{
+  "version": "voice-audition-v1",
+  "source": { "name": "voice_audition", "title": "The spare key", "author": { "name": "Fictional test fixture" } },
+  "note": "Fixed fictional audition script. Every voice job reads this file directly, without an AI dependency.",
+  "draft": {
+    "title": "The spare key",
+    "beats": [
+      { "role": "hook", "text": "My landlord charged me for changing the lock he'd told me to replace.", "direction": "Quiet disbelief. Sound like you are telling a friend, not announcing a headline.", "pauseAfterMs": 180 },
+      { "role": "setup", "text": "My key snapped inside the lock. My landlord was away, so he told me to call a locksmith and send him the receipt. I confirmed it by text before getting the cylinder replaced.", "direction": "Matter of fact, easy conversational pace. Make the written confirmation clear without overemphasizing it.", "pauseAfterMs": 150 },
+      { "role": "escalation", "text": "Then he listed two deposit deductions. An unauthorized lock change, and no spare key. I sent him his own messages. He said he still hadn't received the spare.", "direction": "Restrained frustration and a little disbelief, without shouting or acting outraged.", "pauseAfterMs": 220 },
+      { "role": "turn", "text": "The shopkeeper downstairs showed me the sealed envelope he'd asked me to leave. He hadn't collected it.", "direction": "Slow slightly as the explanation becomes obvious. Dry, understated realization.", "pauseAfterMs": 280 },
+      { "role": "payoff", "text": "I sent him a photo. The next morning both charges disappeared. He promised reimbursement on my next statement. Now I follow every phone call with a text, so there is a written record.", "direction": "Relieved but still wary. Let the final sentence land naturally.", "pauseAfterMs": 0 }
+    ]
+  }
+}

@@ -1,5 +1,5 @@
 import { createReadStream } from "fs";
-import { openai } from "./ai";
+import { getOpenAI } from "./ai";
 
 import { writeFile } from "fs/promises";
 import type { Readable } from "stream";
@@ -12,7 +12,7 @@ export async function generateTranscription(
   },
   { story }: { story: RedditStory }
 ) {
-  const response = await openai.audio.transcriptions.create({
+  const response = await getOpenAI().audio.transcriptions.create({
     model: "whisper-1",
     file: createReadStream(audio.src),
     response_format: "verbose_json",
