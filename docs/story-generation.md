@@ -6,7 +6,7 @@ An engaging short needs a specific conflict, understandable stakes, escalating c
 
 The original text, model, draft, review, final narration, and estimated duration are saved in `media/narrations`. Changing the source or editor/model invalidates the script cache. Audio caching also includes the script, selected voice model, reference audio hash, speaker, speed, seed, and model revision. Old audio without a matching manifest is regenerated.
 
-The default story provider is OpenCode. No provider substitution happens automatically. The default local voice candidate is Qwen3-TTS 1.7B CustomVoice, selected for its direction controls, not a claimed listening-test win. CPU narration can be slow and memory hungry. Choose the final voice after auditioning outputs.
+The default story provider is OpenCode. No provider substitution happens automatically. The production voice is Chatterbox Turbo, selected by the user after the initial auditions. Qwen, Nano, and Kokoro remain available for comparison. CPU narration can be slow and memory hungry. Choose the final voice after auditioning outputs.
 
 ## GitHub Actions
 
@@ -66,3 +66,9 @@ Listen without music, at the same playback volume. Check the opening, frustrated
 The worker generates coherent beats, inserts bounded pauses, normalizes final audio, and records real durations. Basic silence, finite-sample, and duration checks catch severe failures. They do not verify every spoken word. Saved beat times are not word-level forced alignment, and the estimated script duration does not guarantee the final recording's length. Caption alignment and a listening-based selection are the next quality gates.
 
 Research and source links are in [local-voice-research.md](local-voice-research.md). No model has been declared the winner before hearing the runner's actual outputs.
+
+## Longer expressive comparison
+
+Run **Expressive voice comparison** to have Muse Spark generate one shared original performance script of 450–600 words. It covers warmth, joy, amusement, whispered suspense, rising alarm, controlled anger, sadness, reassurance, sarcasm, and relief. The script is validated before four parallel voice jobs consume it. These jobs depend on the shared script only, never on another voice job; one failed voice does not cancel the rest. The shorter **Story and voice auditions** workflow remains available without an AI prerequisite.
+
+Every voice artifact includes the common script and performance notes, the actual generation profile, a full MP3, individual scene WAVs, timings, and runtime logs. Profiles live in `config/voice-profiles.json`. Turbo/Nano receive only supported sampling controls and optional native chuckle/laugh/sigh tags. Qwen receives explicit per-scene delivery instructions. Kokoro receives a preset voice and rate; unsupported emotion controls are not simulated. The profiles are audition candidates, not proven optimal settings.

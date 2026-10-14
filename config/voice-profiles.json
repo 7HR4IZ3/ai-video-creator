@@ -1,0 +1,31 @@
+{
+  "version": "voice-profiles-v1",
+  "chatterbox-turbo": {
+    "revision": "749d1c1a46eb10492095d68fbcf55691ccf137cd",
+    "temperature": 0.75,
+    "top_p": 0.95,
+    "repetition_penalty": 1.2,
+    "note": "Conservative expressive audition profile. Native chuckle/laugh/sigh cues are supported; arbitrary acting instructions and CFG/exaggeration are not."
+  },
+  "chatterbox-nano": {
+    "revision": "71ccd1d0081b430592cea481f4307e764e07bc64",
+    "temperature": 0.75,
+    "top_p": 0.95,
+    "repetition_penalty": 1.2,
+    "note": "Match Turbo's supported sampling settings for comparison. This is a candidate profile, not a measured optimum."
+  },
+  "qwen3-custom": {
+    "revision": "0c0e3051f131929182e2c023b9537f8b1c68adfe",
+    "speaker": "Ryan",
+    "temperature": 0.8,
+    "top_p": 0.9,
+    "repetition_penalty": 1.05,
+    "note": "Use the English-native Ryan speaker and beat-level instructions. Sampling settings favor coherent delivery while retaining variation."
+  },
+  "kokoro": {
+    "revision": "f3ff3571791e39611d31c381e3a41a3af07b4987",
+    "voice": "af_heart",
+    "speed": 0.98,
+    "note": "Expressive preset at a slightly relaxed rate. No unsupported emotion, pitch, cloning, or nonverbal-event controls are claimed."
+  }
+}

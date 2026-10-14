@@ -1,0 +1,104 @@
+name: Expressive voice comparison
+
+on:
+  workflow_dispatch:
+    inputs:
+      story_model:
+        description: OpenCode model that writes one shared expressive test script
+        type: string
+        default: opencode/muse-spark-1.3-contributor-free
+
+permissions:
+  contents: read
+
+jobs:
+  script:
+    name: Write the shared performance script
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      OPENCODE_STORY_MODEL: ${{ inputs.story_model }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - run: bun add --global --trust @opencode/cli@2.0.29
+      - name: Generate a three-to-five-minute expressive script
+        shell: bash
+        run: |
+          mkdir -p audition/script
+          bun run src/story/audition.ts audition/script 2>&1 | tee audition/script/generation.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: expressive-script
+          path: audition/script/
+          retention-days: 14
+
+  voice:
+    name: Expressive ${{ matrix.model }}
+    needs: script
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - model: chatterbox-turbo
+            requirements: chatterbox
+          - model: chatterbox-nano
+            requirements: chatterbox
+          - model: qwen3-custom
+            requirements: qwen
+          - model: kokoro
+            requirements: kokoro
+    env:
+      VOICE_MODEL: ${{ matrix.model }}
+      TTS_CPU_THREADS: '4'
+      TTS_SEED: '42'
+      HF_HOME: ${{ github.workspace }}/.cache/huggingface
+      HF_HUB_DISABLE_TELEMETRY: '1'
+      TOKENIZERS_PARALLELISM: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: expressive-script
+          path: audition/script
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: 0.7.14
+          enable-cache: true
+          cache-dependency-glob: requirements/story/*.txt
+      - name: Install audio tools and this model's isolated environment
+        shell: bash
+        env:
+          REQUIREMENTS: requirements/story/${{ matrix.requirements }}.txt
+        run: |
+          sudo apt-get update && sudo apt-get install -y ffmpeg espeak-ng libsndfile1 sox
+          uv venv --python 3.11 .voice-venv
+          uv pip sync --python .voice-venv/bin/python --extra-index-url https://download.pytorch.org/whl/cpu "$REQUIREMENTS"
+          echo "VIRTUAL_ENV=$GITHUB_WORKSPACE/.voice-venv" >> "$GITHUB_ENV"
+          echo "$GITHUB_WORKSPACE/.voice-venv/bin" >> "$GITHUB_PATH"
+      - uses: actions/cache@v4
+        with:
+          path: .cache/huggingface
+          key: expressive-weights-v1-${{ runner.os }}-${{ matrix.model }}-${{ hashFiles('config/voice-profiles.json') }}
+      - name: Render the shared script with this model's supported controls
+        shell: bash
+        run: |
+          mkdir -p "audition/$VOICE_MODEL"
+          cp audition/script/production.json audition/script/script.txt audition/script/performance-notes.txt "audition/$VOICE_MODEL/"
+          cp config/voice-profiles.json "audition/$VOICE_MODEL/voice-profiles.json"
+          /usr/bin/time -v .voice-venv/bin/python utils/story_voice.py --production audition/script/production.json --model "$VOICE_MODEL" --save-beats --output "audition/$VOICE_MODEL/narration.mp3" 2>&1 | tee "audition/$VOICE_MODEL/generation.log"
+          ffprobe -v quiet -show_format -show_streams -of json "audition/$VOICE_MODEL/narration.mp3" > "audition/$VOICE_MODEL/audio-info.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: expressive-${{ matrix.model }}
+          path: audition/${{ matrix.model }}/
+          retention-days: 14

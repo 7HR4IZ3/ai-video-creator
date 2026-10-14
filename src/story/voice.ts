@@ -5,15 +5,16 @@ import path from "node:path";
 import type { StoryProduction } from "./editor";
 
 export async function synthesizeStory(production: StoryProduction, options: { output?: string; model?: string } = {}) {
-  const model = options.model || process.env.LOCAL_TTS_MODEL || "qwen3-custom";
+  const model = options.model || process.env.LOCAL_TTS_MODEL || "chatterbox-turbo";
   if (!["qwen3-custom", "kokoro", "chatterbox-nano", "chatterbox-turbo"].includes(model)) throw new Error("LOCAL_TTS_MODEL must be qwen3-custom, kokoro, chatterbox-nano, or chatterbox-turbo.");
   const output = path.resolve(options.output || `media/audios/${production.source.name}.mp3`);
   const reference = process.env.TTS_REFERENCE_AUDIO;
   const referenceHash = reference ? createHash("sha256").update(await readFile(reference)).digest("hex") : undefined;
+  const profiles = JSON.parse(await readFile(path.resolve(import.meta.dir, "../../config/voice-profiles.json"), "utf8"));
   const fingerprint = createHash("sha256").update(JSON.stringify({
-    version: "story-voice-v1", draft: production.draft, model, referenceHash,
-    revision: process.env.TTS_MODEL_REVISION || "pinned-default",
-    voice: process.env.TTS_VOICE || "af_heart", speaker: process.env.TTS_SPEAKER || "Ryan", speed: process.env.TTS_SPEED || "1.0",
+    version: "story-voice-v2", profile: profiles[model], draft: production.draft, model, referenceHash,
+    revision: process.env.TTS_MODEL_REVISION || profiles[model].revision,
+    voice: process.env.TTS_VOICE || profiles[model].voice, speaker: process.env.TTS_SPEAKER || profiles[model].speaker, speed: process.env.TTS_SPEED || String(profiles[model].speed),
     seed: process.env.TTS_SEED || "42",
   })).digest("hex");
   try {
